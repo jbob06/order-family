@@ -1,23 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragStartEvent,
-  type DragEndEvent,
-  useDraggable,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-  useSortable,
-  arrayMove,
-} from "@dnd-kit/sortable";
+import { useDraggable } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { useStore } from "@/store/useStore";
 import { FAMILY_COLORS } from "@/types";
 import type { Order, OrderStatus } from "@/types";
@@ -95,10 +80,9 @@ export function OrdersPanel({ onCreateFamily }: Props) {
   const [sortCol, setSortCol]           = useState<SortCol>("submittedDate");
   const [sortDir, setSortDir]           = useState<"asc" | "desc">("desc");
   const [columnOrder, setColumnOrder]   = useState<ColKey[]>(DEFAULT_COL_ORDER);
-  const [activeColKey, setActiveColKey] = useState<ColKey | null>(null);
 
-  // Sensors for column reordering — higher distance to avoid accidental drags
-  const colSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const [draggedCol, setDraggedCol] = useState<ColKey | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<ColKey | null>(null);
 
   const selectedCustomer   = customers.find((c) => c.id === selectedCustomerId);
   const visibleCustomerIds = getVisibleCustomerIds();
@@ -163,20 +147,13 @@ export function OrdersPanel({ onCreateFamily }: Props) {
     setBulkFamilyId("");
   };
 
-  // ── Column drag handlers ──────────────────────────────────────────────────
-  const handleColDragStart = (e: DragStartEvent) => setActiveColKey(e.active.id as ColKey);
-  const handleColDragEnd   = (e: DragEndEvent) => {
-    setActiveColKey(null);
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    setColumnOrder((prev) => {
-      const from = prev.indexOf(active.id as ColKey);
-      const to   = prev.indexOf(over.id as ColKey);
-      return arrayMove(prev, from, to);
-    });
+  // ── Column drag handlers (native HTML drag, no DndContext needed) ──────────
+  const handleColDragStart = (key: ColKey) => setDraggedCol(key);
+  const handleColDragEnd   = () => { setDraggedCol(null); setDragOverCol(null); };
+  const handleColDrop      = (targetKey: ColKey) => {
+    if (!draggedCol || draggedCol === targetKey) return;
+    setColumnOrder((prev) => arrayMove(prev, prev.indexOf(draggedCol), prev.indexOf(targetKey)));
   };
-
-  const activeColDef = activeColKey ? ALL_COLUMNS.find((c) => c.key === activeColKey) : null;
 
   if (!selectedCustomerId) {
     return (
@@ -295,43 +272,29 @@ export function OrdersPanel({ onCreateFamily }: Props) {
       <div className="flex-1 overflow-y-auto">
         {view === "table" ? (
           <table className="w-full text-sm">
-
-            {/* Column-reorder DndContext — nested, only covers <thead> */}
-            <DndContext
-              sensors={colSensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleColDragStart}
-              onDragEnd={handleColDragEnd}
-            >
-              <SortableContext items={visibleColumns.map((c) => c.key)} strategy={horizontalListSortingStrategy}>
-                <thead className="bg-white border-b border-slate-200 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-2.5 w-10">
-                      <input type="checkbox" checked={allSelected} onChange={handleSelectAll}
-                        className="rounded border-slate-300 text-blue-600" />
-                    </th>
-                    {visibleColumns.map((col) => (
-                      <SortableColHeader
-                        key={col.key}
-                        col={col}
-                        sortCol={sortCol}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                      />
-                    ))}
-                  </tr>
-                </thead>
-              </SortableContext>
-
-              {/* Floating ghost of the column being dragged */}
-              <DragOverlay>
-                {activeColDef && (
-                  <div className="px-3 py-2 bg-white border border-blue-300 shadow-lg rounded text-xs font-semibold text-blue-700 uppercase tracking-wide whitespace-nowrap opacity-95">
-                    {activeColDef.label}
-                  </div>
-                )}
-              </DragOverlay>
-            </DndContext>
+            <thead className="bg-white border-b border-slate-200 sticky top-0 z-10">
+              <tr>
+                <th className="px-4 py-2.5 w-10">
+                  <input type="checkbox" checked={allSelected} onChange={handleSelectAll}
+                    className="rounded border-slate-300 text-blue-600" />
+                </th>
+                {visibleColumns.map((col) => (
+                  <ColHeader
+                    key={col.key}
+                    col={col}
+                    sortCol={sortCol}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                    draggedCol={draggedCol}
+                    dragOverCol={dragOverCol}
+                    setDragOverCol={setDragOverCol}
+                    onDragStart={handleColDragStart}
+                    onDragEnd={handleColDragEnd}
+                    onDrop={handleColDrop}
+                  />
+                ))}
+              </tr>
+            </thead>
 
             <tbody>
               {visibleOrders.map((order) => (
@@ -381,28 +344,56 @@ export function OrdersPanel({ onCreateFamily }: Props) {
   );
 }
 
-// ─── Sortable column header ───────────────────────────────────────────────────
+// ─── Column header with native HTML drag-to-reorder ──────────────────────────
 
-function SortableColHeader({
+function ColHeader({
   col, sortCol, sortDir, onSort,
+  draggedCol, dragOverCol, setDragOverCol,
+  onDragStart, onDragEnd, onDrop,
 }: {
   col: ColDef; sortCol: SortCol; sortDir: "asc" | "desc"; onSort: (c: SortCol) => void;
+  draggedCol: ColKey | null; dragOverCol: ColKey | null;
+  setDragOverCol: (k: ColKey | null) => void;
+  onDragStart: (k: ColKey) => void; onDragEnd: () => void; onDrop: (k: ColKey) => void;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useSortable({ id: col.key });
-  const isActive = col.sortKey === sortCol;
+  const isActive    = col.sortKey === sortCol;
+  const isDragging  = draggedCol === col.key;
+  const isOver      = dragOverCol === col.key && !isDragging;
 
   return (
     <th
-      ref={setNodeRef}
-      {...attributes}
       className={`px-3 py-2.5 text-${col.align ?? "left"} text-xs uppercase tracking-wide whitespace-nowrap
-        transition-colors ${isDragging ? "opacity-30 bg-blue-50" : "bg-white"}`}
+        transition-colors
+        ${isDragging ? "opacity-30" : ""}
+        ${isOver ? "bg-blue-50 border-l-2 border-blue-400" : "bg-white"}`}
+      onDragOver={(e) => {
+        if (!draggedCol) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        setDragOverCol(col.key);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverCol(null);
+      }}
+      onDrop={(e) => { e.preventDefault(); onDrop(col.key); setDragOverCol(null); }}
     >
       <div className={`inline-flex items-center gap-1 ${col.align === "right" ? "flex-row-reverse" : ""}`}>
-        {/* Drag handle — grab this to reorder the column */}
+        {/* Drag handle — native HTML drag */}
         <span
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing text-slate-200 hover:text-slate-400 transition-colors flex-shrink-0 select-none"
+          draggable
+          onDragStart={(e) => {
+            e.stopPropagation();
+            onDragStart(col.key);
+            // Custom ghost: small pill with column label
+            const ghost = document.createElement("div");
+            ghost.textContent = col.label;
+            ghost.style.cssText = "position:fixed;top:-999px;padding:4px 10px;background:#fff;border:1px solid #93c5fd;border-radius:6px;font-size:11px;font-weight:700;color:#1d4ed8;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15)";
+            document.body.appendChild(ghost);
+            e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 14);
+            requestAnimationFrame(() => document.body.removeChild(ghost));
+          }}
+          onDragEnd={onDragEnd}
+          className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors flex-shrink-0 select-none"
           title="Drag to reorder column"
         >
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
@@ -410,7 +401,7 @@ function SortableColHeader({
           </svg>
         </span>
 
-        {/* Label — click to sort (sortable columns only) */}
+        {/* Label — click to sort */}
         {col.sortKey ? (
           <button
             onClick={() => onSort(col.sortKey!)}
