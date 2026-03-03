@@ -1,9 +1,9 @@
 export type OrderStatus =
-  | "pending"
-  | "processing"
-  | "completed"
-  | "cancelled"
-  | "on_hold";
+  | "confirm"
+  | "implement"
+  | "finalize"
+  | "activate"
+  | "billing";
 
 export interface Customer {
   id: string;
@@ -21,6 +21,7 @@ export interface Order {
   status: OrderStatus;
   submittedDate: string;
   value: number;
+  address: string;
   familyId: string | null;
 }
 

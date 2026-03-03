@@ -10,12 +10,12 @@ import { StatusBadge } from "./StatusBadge";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS: { value: OrderStatus | "all"; label: string }[] = [
-  { value: "all", label: "All Statuses" },
-  { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "completed", label: "Completed" },
-  { value: "on_hold", label: "On Hold" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "all",       label: "All Statuses" },
+  { value: "confirm",   label: "Confirm" },
+  { value: "implement", label: "Implement" },
+  { value: "finalize",  label: "Finalize" },
+  { value: "activate",  label: "Activate" },
+  { value: "billing",   label: "Billing" },
 ];
 
 const SORT_OPTIONS = [
@@ -29,11 +29,11 @@ const SORT_OPTIONS = [
 
 // Status → coloured left border for cards
 const STATUS_CARD_BORDER: Record<OrderStatus, string> = {
-  pending:    "border-l-slate-300",
-  processing: "border-l-blue-500",
-  completed:  "border-l-green-500",
-  on_hold:    "border-l-amber-400",
-  cancelled:  "border-l-red-400",
+  confirm:   "border-l-amber-400",
+  implement: "border-l-blue-500",
+  finalize:  "border-l-purple-500",
+  activate:  "border-l-teal-500",
+  billing:   "border-l-green-500",
 };
 
 type SortCol = "orderNumber" | "product" | "status" | "submittedDate" | "value" | "family";
@@ -320,6 +320,7 @@ export function OrdersPanel({ onCreateFamily }: Props) {
                 <SortTh col="status"        label="Status"    active={sortCol} dir={sortDir} onSort={handleSort} />
                 <SortTh col="submittedDate" label="Submitted" active={sortCol} dir={sortDir} onSort={handleSort} />
                 <SortTh col="value"         label="Value"     active={sortCol} dir={sortDir} onSort={handleSort} align="right" />
+                <th className="px-3 py-2.5 text-left font-medium text-slate-600 text-xs uppercase tracking-wide">Address</th>
                 <SortTh col="family"        label="Family"    active={sortCol} dir={sortDir} onSort={handleSort} />
               </tr>
             </thead>
@@ -333,11 +334,12 @@ export function OrdersPanel({ onCreateFamily }: Props) {
                   families={availableFamilies}
                   showAccount={viewLinkedOrders}
                   accountName={customers.find((c) => c.id === order.customerId)?.name ?? ""}
+                  address={order.address}
                 />
               ))}
               {visibleOrders.length === 0 && (
                 <tr>
-                  <td colSpan={viewLinkedOrders ? 8 : 7} className="text-center py-12 text-slate-400 text-sm">
+                  <td colSpan={viewLinkedOrders ? 9 : 8} className="text-center py-12 text-slate-400 text-sm">
                     No orders match the current filters
                   </td>
                 </tr>
@@ -355,6 +357,7 @@ export function OrdersPanel({ onCreateFamily }: Props) {
                 families={availableFamilies}
                 showAccount={viewLinkedOrders}
                 accountName={customers.find((c) => c.id === order.customerId)?.name ?? ""}
+                address={order.address}
               />
             ))}
             {visibleOrders.length === 0 && (
@@ -399,10 +402,10 @@ function SortTh({
 // ─── Table row ────────────────────────────────────────────────────────────────
 
 function OrderRow({
-  order, isSelected, onToggle, families, showAccount, accountName,
+  order, isSelected, onToggle, families, showAccount, accountName, address,
 }: {
   order: Order; isSelected: boolean; onToggle: () => void;
-  families: FamilyRef[]; showAccount: boolean; accountName: string;
+  families: FamilyRef[]; showAccount: boolean; accountName: string; address: string;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: order.id,
@@ -440,6 +443,9 @@ function OrderRow({
       <td className="px-3 py-2.5 text-right text-xs text-slate-700 whitespace-nowrap font-medium">
         ${order.value.toLocaleString()}
       </td>
+      <td className="px-3 py-2.5 text-xs text-slate-500 max-w-[180px]">
+        <span className="block truncate" title={address}>{address}</span>
+      </td>
       <td className="px-3 py-2.5">
         {family && colorConfig ? (
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${colorConfig.badge}`}>
@@ -457,10 +463,10 @@ function OrderRow({
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 function OrderCard({
-  order, isSelected, onToggle, families, showAccount, accountName,
+  order, isSelected, onToggle, families, showAccount, accountName, address,
 }: {
   order: Order; isSelected: boolean; onToggle: () => void;
-  families: FamilyRef[]; showAccount: boolean; accountName: string;
+  families: FamilyRef[]; showAccount: boolean; accountName: string; address: string;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: order.id,
@@ -517,6 +523,15 @@ function OrderCard({
         {showAccount && accountName && (
           <div className="text-xs text-slate-400 mt-1.5 truncate">{accountName}</div>
         )}
+
+        {/* Service address */}
+        <div className="flex items-start gap-1 mt-1.5">
+          <svg className="w-3 h-3 text-slate-300 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="text-xs text-slate-400 leading-tight" title={address}>{address}</span>
+        </div>
 
         {/* Family badge */}
         {family && colorConfig ? (

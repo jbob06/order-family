@@ -3,11 +3,11 @@
 import type { OrderStatus } from "@/types";
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> = {
-  pending:    { label: "Pending",    className: "bg-slate-100 text-slate-700" },
-  processing: { label: "Processing", className: "bg-blue-100 text-blue-700" },
-  completed:  { label: "Completed",  className: "bg-green-100 text-green-700" },
-  cancelled:  { label: "Cancelled",  className: "bg-red-100 text-red-700" },
-  on_hold:    { label: "On Hold",    className: "bg-yellow-100 text-yellow-700" },
+  confirm:   { label: "Confirm",   className: "bg-amber-100 text-amber-700" },
+  implement: { label: "Implement", className: "bg-blue-100 text-blue-700" },
+  finalize:  { label: "Finalize",  className: "bg-purple-100 text-purple-700" },
+  activate:  { label: "Activate",  className: "bg-teal-100 text-teal-700" },
+  billing:   { label: "Billing",   className: "bg-green-100 text-green-700" },
 };
 
 export function StatusBadge({ status }: { status: OrderStatus }) {
