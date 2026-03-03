@@ -383,19 +383,19 @@ function ColHeader({
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverCol(null);
       }}
       onDrop={(e) => { e.preventDefault(); onDrop(col.key); setDragOverCol(null); }}
-      onClick={() => { if (col.sortKey) onSort(col.sortKey); }}
+      onMouseUp={() => { if (col.sortKey) onSort(col.sortKey); }}
       className={`px-3 py-2.5 text-${col.align ?? "left"} text-xs uppercase tracking-wide whitespace-nowrap
         select-none transition-colors cursor-grab active:cursor-grabbing
         ${col.sortKey ? "hover:bg-slate-50" : ""}
         ${isDragging ? "opacity-30" : ""}
         ${isOver ? "bg-blue-50 border-l-2 border-blue-400" : ""}`}
     >
-      <div className={`inline-flex items-center gap-0.5 font-medium
+      <div className={`group inline-flex items-center gap-0.5 font-medium
         ${col.sortKey ? (isActive ? "text-blue-600" : "text-slate-600") : "text-slate-600"}`}
       >
         {col.label}
         {col.sortKey && (
-          <span className={`transition-opacity ${isActive ? "opacity-100" : "opacity-0"}`}>
+          <span className={`transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-40"}`}>
             {isActive && sortDir === "asc"
               ? <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
               : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>}
