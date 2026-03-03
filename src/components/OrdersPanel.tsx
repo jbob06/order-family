@@ -1,13 +1,53 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useDraggable } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+  useDraggable,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { useStore } from "@/store/useStore";
 import { FAMILY_COLORS } from "@/types";
 import type { Order, OrderStatus } from "@/types";
 import { StatusBadge } from "./StatusBadge";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Column definitions ───────────────────────────────────────────────────────
+
+type ColKey = "orderNumber" | "product" | "account" | "status" | "submittedDate" | "value" | "address" | "family";
+type SortCol = "orderNumber" | "product" | "status" | "submittedDate" | "value" | "family";
+type FamilyRef = { id: string; name: string; color: string };
+
+interface ColDef {
+  key: ColKey;
+  label: string;
+  sortKey?: SortCol;
+  align?: "right";
+}
+
+const ALL_COLUMNS: ColDef[] = [
+  { key: "orderNumber",   label: "Order #",   sortKey: "orderNumber" },
+  { key: "product",       label: "Product",   sortKey: "product" },
+  { key: "account",       label: "Account" },
+  { key: "status",        label: "Status",    sortKey: "status" },
+  { key: "submittedDate", label: "Submitted", sortKey: "submittedDate" },
+  { key: "value",         label: "Value",     sortKey: "value",  align: "right" },
+  { key: "address",       label: "Address" },
+  { key: "family",        label: "Family",    sortKey: "family" },
+];
+
+const DEFAULT_COL_ORDER: ColKey[] = ["orderNumber", "product", "account", "status", "submittedDate", "value", "address", "family"];
 
 const STATUS_OPTIONS: { value: OrderStatus | "all"; label: string }[] = [
   { value: "all",       label: "All Statuses" },
@@ -19,15 +59,14 @@ const STATUS_OPTIONS: { value: OrderStatus | "all"; label: string }[] = [
 ];
 
 const SORT_OPTIONS = [
-  { value: "orderNumber", label: "Order #" },
-  { value: "product",     label: "Product" },
-  { value: "status",      label: "Status" },
+  { value: "orderNumber",   label: "Order #" },
+  { value: "product",       label: "Product" },
+  { value: "status",        label: "Status" },
   { value: "submittedDate", label: "Date" },
-  { value: "value",       label: "Value" },
-  { value: "family",      label: "Family" },
+  { value: "value",         label: "Value" },
+  { value: "family",        label: "Family" },
 ];
 
-// Status → coloured left border for cards
 const STATUS_CARD_BORDER: Record<OrderStatus, string> = {
   confirm:   "border-l-amber-400",
   implement: "border-l-blue-500",
@@ -36,46 +75,40 @@ const STATUS_CARD_BORDER: Record<OrderStatus, string> = {
   billing:   "border-l-green-500",
 };
 
-type SortCol = "orderNumber" | "product" | "status" | "submittedDate" | "value" | "family";
-type View = "table" | "cards";
-
-// ─── Shared family type ───────────────────────────────────────────────────────
-type FamilyRef = { id: string; name: string; color: string };
-
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
-interface Props {
-  onCreateFamily: () => void;
-}
+interface Props { onCreateFamily: () => void; }
 
 export function OrdersPanel({ onCreateFamily }: Props) {
   const {
-    customers,
-    orders,
-    families,
-    selectedCustomerId,
-    selectedOrderIds,
-    viewLinkedOrders,
-    setViewLinkedOrders,
-    toggleOrderSelection,
-    selectAllOrders,
-    clearOrderSelection,
-    assignOrdersToFamily,
-    getVisibleCustomerIds,
-    getLinkedGroupIds,
+    customers, orders, families,
+    selectedCustomerId, selectedOrderIds, viewLinkedOrders,
+    setViewLinkedOrders, toggleOrderSelection, selectAllOrders,
+    clearOrderSelection, assignOrdersToFamily,
+    getVisibleCustomerIds, getLinkedGroupIds,
   } = useStore();
 
   const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [bulkFamilyId, setBulkFamilyId] = useState<string>("");
-  const [view, setView]                 = useState<View>("table");
+  const [view, setView]                 = useState<"table" | "cards">("table");
   const [sortCol, setSortCol]           = useState<SortCol>("submittedDate");
   const [sortDir, setSortDir]           = useState<"asc" | "desc">("desc");
+  const [columnOrder, setColumnOrder]   = useState<ColKey[]>(DEFAULT_COL_ORDER);
+  const [activeColKey, setActiveColKey] = useState<ColKey | null>(null);
 
-  const selectedCustomer  = customers.find((c) => c.id === selectedCustomerId);
+  // Sensors for column reordering — higher distance to avoid accidental drags
+  const colSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const selectedCustomer   = customers.find((c) => c.id === selectedCustomerId);
   const visibleCustomerIds = getVisibleCustomerIds();
   const linkedGroupIds     = getLinkedGroupIds();
   const availableFamilies  = families.filter((f) => linkedGroupIds.includes(f.customerId));
+
+  // Ordered columns; filter "account" when not in linked mode
+  const visibleColumns = columnOrder
+    .map((k) => ALL_COLUMNS.find((c) => c.key === k)!)
+    .filter((c) => c && (c.key !== "account" || viewLinkedOrders));
 
   // ── Filtered + sorted orders ──────────────────────────────────────────────
   const visibleOrders = useMemo(() => {
@@ -88,7 +121,6 @@ export function OrdersPanel({ onCreateFamily }: Props) {
       }
       return true;
     });
-
     return [...filtered].sort((a, b) => {
       let cmp = 0;
       switch (sortCol) {
@@ -100,21 +132,18 @@ export function OrdersPanel({ onCreateFamily }: Props) {
         case "family": {
           const af = families.find((f) => f.id === a.familyId)?.name ?? "";
           const bf = families.find((f) => f.id === b.familyId)?.name ?? "";
-          cmp = af.localeCompare(bf);
-          break;
+          cmp = af.localeCompare(bf); break;
         }
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [orders, visibleCustomerIds, statusFilter, search, sortCol, sortDir, families]);
 
-  const allSelected = visibleOrders.length > 0 && visibleOrders.every((o) => selectedOrderIds.has(o.id));
+  const allSelected  = visibleOrders.length > 0 && visibleOrders.every((o) => selectedOrderIds.has(o.id));
   const someSelected = selectedOrderIds.size > 0;
 
   const linkedCustomers = selectedCustomer
-    ? selectedCustomer.linkedCustomerIds
-        .map((id) => customers.find((c) => c.id === id))
-        .filter(Boolean)
+    ? selectedCustomer.linkedCustomerIds.map((id) => customers.find((c) => c.id === id)).filter(Boolean)
     : [];
 
   const handleSort = (col: SortCol) => {
@@ -134,12 +163,28 @@ export function OrdersPanel({ onCreateFamily }: Props) {
     setBulkFamilyId("");
   };
 
+  // ── Column drag handlers ──────────────────────────────────────────────────
+  const handleColDragStart = (e: DragStartEvent) => setActiveColKey(e.active.id as ColKey);
+  const handleColDragEnd   = (e: DragEndEvent) => {
+    setActiveColKey(null);
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setColumnOrder((prev) => {
+      const from = prev.indexOf(active.id as ColKey);
+      const to   = prev.indexOf(over.id as ColKey);
+      return arrayMove(prev, from, to);
+    });
+  };
+
+  const activeColDef = activeColKey ? ALL_COLUMNS.find((c) => c.key === activeColKey) : null;
+
   if (!selectedCustomerId) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
           <p className="text-slate-400 text-sm">Select a customer to view orders</p>
         </div>
@@ -150,7 +195,7 @@ export function OrdersPanel({ onCreateFamily }: Props) {
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
 
-      {/* ── Header ── */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="bg-white border-b border-slate-200 px-5 py-3">
         <div className="flex items-center justify-between">
           <div>
@@ -162,50 +207,29 @@ export function OrdersPanel({ onCreateFamily }: Props) {
           <div className="flex items-center gap-2">
             {linkedCustomers.length > 0 && (
               <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={viewLinkedOrders}
-                  onChange={(e) => setViewLinkedOrders(e.target.checked)}
-                  className="rounded border-slate-300 text-blue-600"
-                />
+                <input type="checkbox" checked={viewLinkedOrders} onChange={(e) => setViewLinkedOrders(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-600" />
                 Show linked accounts ({linkedCustomers.length})
               </label>
             )}
-
-            {/* View toggle */}
             <div className="flex items-center border border-slate-200 rounded-md overflow-hidden">
-              <button
-                onClick={() => setView("table")}
-                title="Table view"
-                className={`px-2 py-1.5 transition-colors ${
-                  view === "table" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                {/* Table icon */}
+              <button onClick={() => setView("table")} title="Table view"
+                className={`px-2 py-1.5 transition-colors ${view === "table" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                     d="M3 10h18M3 14h18M10 4v16M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" />
                 </svg>
               </button>
-              <button
-                onClick={() => setView("cards")}
-                title="Card view"
-                className={`px-2 py-1.5 transition-colors border-l border-slate-200 ${
-                  view === "cards" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                {/* Grid icon */}
+              <button onClick={() => setView("cards")} title="Card view"
+                className={`px-2 py-1.5 transition-colors border-l border-slate-200 ${view === "cards" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                     d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
               </button>
             </div>
-
-            <button
-              onClick={onCreateFamily}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-            >
+            <button onClick={onCreateFamily}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -216,79 +240,48 @@ export function OrdersPanel({ onCreateFamily }: Props) {
 
         {/* Filters row */}
         <div className="flex items-center gap-2 mt-3">
-          <input
-            type="text"
-            placeholder="Search orders..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 max-w-xs px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as OrderStatus | "all")}
-            className="px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
+          <input type="text" placeholder="Search orders..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 max-w-xs px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as OrderStatus | "all")}
+            className="px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            {STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
-
-          {/* Sort controls — always visible, extra useful in card view */}
           <div className="flex items-center gap-1 border border-slate-200 rounded-md overflow-hidden bg-white">
-            <select
-              value={sortCol}
-              onChange={(e) => { setSortCol(e.target.value as SortCol); }}
-              className="pl-2 pr-1 py-1.5 text-xs text-slate-600 bg-transparent focus:outline-none"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
+            <select value={sortCol} onChange={(e) => setSortCol(e.target.value as SortCol)}
+              className="pl-2 pr-1 py-1.5 text-xs text-slate-600 bg-transparent focus:outline-none">
+              {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            <button
-              onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+            <button onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
               className="px-2 py-1.5 text-slate-500 hover:bg-slate-50 border-l border-slate-200 transition-colors"
-              title={sortDir === "asc" ? "Ascending — click to reverse" : "Descending — click to reverse"}
-            >
+              title={sortDir === "asc" ? "Ascending" : "Descending"}>
               {sortDir === "asc"
                 ? <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9M3 12h5m10 0l-4-4m4 4l-4 4" /></svg>
-                : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9M3 12h5m10 4l-4 4m4-4l-4-4" /></svg>
-              }
+                : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9M3 12h5m10 4l-4 4m4-4l-4-4" /></svg>}
             </button>
           </div>
-
           <span className="text-xs text-slate-400">{visibleOrders.length} orders</span>
         </div>
       </div>
 
-      {/* ── Bulk action bar ── */}
+      {/* ── Bulk bar ────────────────────────────────────────────────────────── */}
       {someSelected && (
         <div className="bg-blue-600 text-white px-5 py-2 flex items-center gap-3">
           <span className="text-sm font-medium">{selectedOrderIds.size} selected</span>
           <div className="flex items-center gap-2 ml-auto">
-            <select
-              value={bulkFamilyId}
-              onChange={(e) => setBulkFamilyId(e.target.value)}
-              className="px-2 py-1 text-sm text-slate-900 bg-white rounded border-0 focus:outline-none focus:ring-2 focus:ring-white"
-            >
+            <select value={bulkFamilyId} onChange={(e) => setBulkFamilyId(e.target.value)}
+              className="px-2 py-1 text-sm text-slate-900 bg-white rounded border-0 focus:outline-none focus:ring-2 focus:ring-white">
               <option value="">Assign to family...</option>
               <option value="unassigned">— Remove from family —</option>
               <option value="__new__">+ Create new family...</option>
               {availableFamilies.length > 0 && <option disabled>──────────────</option>}
               {availableFamilies.map((f) => {
-                const owner = customers.find((c) => c.id === f.customerId);
+                const owner  = customers.find((c) => c.id === f.customerId);
                 const linked = f.customerId !== selectedCustomerId;
-                return (
-                  <option key={f.id} value={f.id}>
-                    {f.name}{linked && owner ? ` (${owner.name.split(" ")[0]})` : ""}
-                  </option>
-                );
+                return <option key={f.id} value={f.id}>{f.name}{linked && owner ? ` (${owner.name.split(" ")[0]})` : ""}</option>;
               })}
             </select>
-            <button
-              onClick={handleBulkAssign}
-              disabled={!bulkFamilyId}
-              className="px-3 py-1 text-sm bg-white text-blue-700 font-medium rounded disabled:opacity-40 hover:bg-blue-50 transition-colors"
-            >
+            <button onClick={handleBulkAssign} disabled={!bulkFamilyId}
+              className="px-3 py-1 text-sm bg-white text-blue-700 font-medium rounded disabled:opacity-40 hover:bg-blue-50 transition-colors">
               Apply
             </button>
             <button onClick={clearOrderSelection} className="px-2 py-1 text-sm text-blue-200 hover:text-white transition-colors">
@@ -298,48 +291,64 @@ export function OrdersPanel({ onCreateFamily }: Props) {
         </div>
       )}
 
-      {/* ── Content — table or cards ── */}
+      {/* ── Content ─────────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {view === "table" ? (
           <table className="w-full text-sm">
-            <thead className="bg-white border-b border-slate-200 sticky top-0 z-10">
-              <tr>
-                <th className="px-4 py-2.5 w-10">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={handleSelectAll}
-                    className="rounded border-slate-300 text-blue-600"
-                  />
-                </th>
-                <SortTh col="orderNumber"   label="Order #"   active={sortCol} dir={sortDir} onSort={handleSort} />
-                <SortTh col="product"       label="Product"   active={sortCol} dir={sortDir} onSort={handleSort} />
-                {viewLinkedOrders && (
-                  <th className="px-3 py-2.5 text-left font-medium text-slate-600 text-xs uppercase tracking-wide">Account</th>
+
+            {/* Column-reorder DndContext — nested, only covers <thead> */}
+            <DndContext
+              sensors={colSensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleColDragStart}
+              onDragEnd={handleColDragEnd}
+            >
+              <SortableContext items={visibleColumns.map((c) => c.key)} strategy={horizontalListSortingStrategy}>
+                <thead className="bg-white border-b border-slate-200 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-2.5 w-10">
+                      <input type="checkbox" checked={allSelected} onChange={handleSelectAll}
+                        className="rounded border-slate-300 text-blue-600" />
+                    </th>
+                    {visibleColumns.map((col) => (
+                      <SortableColHeader
+                        key={col.key}
+                        col={col}
+                        sortCol={sortCol}
+                        sortDir={sortDir}
+                        onSort={handleSort}
+                      />
+                    ))}
+                  </tr>
+                </thead>
+              </SortableContext>
+
+              {/* Floating ghost of the column being dragged */}
+              <DragOverlay>
+                {activeColDef && (
+                  <div className="px-3 py-2 bg-white border border-blue-300 shadow-lg rounded text-xs font-semibold text-blue-700 uppercase tracking-wide whitespace-nowrap opacity-95">
+                    {activeColDef.label}
+                  </div>
                 )}
-                <SortTh col="status"        label="Status"    active={sortCol} dir={sortDir} onSort={handleSort} />
-                <SortTh col="submittedDate" label="Submitted" active={sortCol} dir={sortDir} onSort={handleSort} />
-                <SortTh col="value"         label="Value"     active={sortCol} dir={sortDir} onSort={handleSort} align="right" />
-                <th className="px-3 py-2.5 text-left font-medium text-slate-600 text-xs uppercase tracking-wide">Address</th>
-                <SortTh col="family"        label="Family"    active={sortCol} dir={sortDir} onSort={handleSort} />
-              </tr>
-            </thead>
+              </DragOverlay>
+            </DndContext>
+
             <tbody>
               {visibleOrders.map((order) => (
                 <OrderRow
                   key={order.id}
                   order={order}
+                  columns={visibleColumns}
                   isSelected={selectedOrderIds.has(order.id)}
                   onToggle={() => toggleOrderSelection(order.id)}
                   families={availableFamilies}
                   showAccount={viewLinkedOrders}
                   accountName={customers.find((c) => c.id === order.customerId)?.name ?? ""}
-                  address={order.address}
                 />
               ))}
               {visibleOrders.length === 0 && (
                 <tr>
-                  <td colSpan={viewLinkedOrders ? 9 : 8} className="text-center py-12 text-slate-400 text-sm">
+                  <td colSpan={visibleColumns.length + 1} className="text-center py-12 text-slate-400 text-sm">
                     No orders match the current filters
                   </td>
                 </tr>
@@ -372,48 +381,69 @@ export function OrdersPanel({ onCreateFamily }: Props) {
   );
 }
 
-// ─── Sort header cell ─────────────────────────────────────────────────────────
+// ─── Sortable column header ───────────────────────────────────────────────────
 
-function SortTh({
-  col, label, active, dir, onSort, align = "left",
+function SortableColHeader({
+  col, sortCol, sortDir, onSort,
 }: {
-  col: SortCol; label: string; active: SortCol; dir: "asc" | "desc";
-  onSort: (c: SortCol) => void; align?: "left" | "right";
+  col: ColDef; sortCol: SortCol; sortDir: "asc" | "desc"; onSort: (c: SortCol) => void;
 }) {
-  const isActive = col === active;
+  const { attributes, listeners, setNodeRef, isDragging } = useSortable({ id: col.key });
+  const isActive = col.sortKey === sortCol;
+
   return (
     <th
-      className={`px-3 py-2.5 text-${align} text-xs uppercase tracking-wide select-none cursor-pointer group`}
-      onClick={() => onSort(col)}
+      ref={setNodeRef}
+      {...attributes}
+      className={`px-3 py-2.5 text-${col.align ?? "left"} text-xs uppercase tracking-wide whitespace-nowrap
+        transition-colors ${isDragging ? "opacity-30 bg-blue-50" : "bg-white"}`}
     >
-      <span className={`inline-flex items-center gap-1 font-medium ${isActive ? "text-blue-600" : "text-slate-600 hover:text-slate-900"}`}>
-        {label}
-        <span className={`transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-40"}`}>
-          {isActive && dir === "asc"
-            ? <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
-            : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
-          }
+      <div className={`inline-flex items-center gap-1 ${col.align === "right" ? "flex-row-reverse" : ""}`}>
+        {/* Drag handle — grab this to reorder the column */}
+        <span
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-slate-200 hover:text-slate-400 transition-colors flex-shrink-0 select-none"
+          title="Drag to reorder column"
+        >
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M9 5a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zM9 12a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zM9 19a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2z" />
+          </svg>
         </span>
-      </span>
+
+        {/* Label — click to sort (sortable columns only) */}
+        {col.sortKey ? (
+          <button
+            onClick={() => onSort(col.sortKey!)}
+            className={`group flex items-center gap-0.5 font-medium transition-colors
+              ${isActive ? "text-blue-600" : "text-slate-600 hover:text-slate-900"}`}
+          >
+            {col.label}
+            <span className={`transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-40"}`}>
+              {isActive && sortDir === "asc"
+                ? <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+                : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>}
+            </span>
+          </button>
+        ) : (
+          <span className="font-medium text-slate-600">{col.label}</span>
+        )}
+      </div>
     </th>
   );
 }
 
-// ─── Table row ────────────────────────────────────────────────────────────────
+// ─── Table row (cells driven by column order) ─────────────────────────────────
 
 function OrderRow({
-  order, isSelected, onToggle, families, showAccount, accountName, address,
+  order, columns, isSelected, onToggle, families, showAccount, accountName,
 }: {
-  order: Order; isSelected: boolean; onToggle: () => void;
-  families: FamilyRef[]; showAccount: boolean; accountName: string; address: string;
+  order: Order; columns: ColDef[]; isSelected: boolean; onToggle: () => void;
+  families: FamilyRef[]; showAccount: boolean; accountName: string;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: order.id,
     data: { type: "order", orderId: order.id, familyId: order.familyId },
   });
-
-  const family      = families.find((f) => f.id === order.familyId);
-  const colorConfig = family ? FAMILY_COLORS.find((c) => c.value === family.color) : null;
 
   return (
     <tr
@@ -429,38 +459,81 @@ function OrderRow({
         <input type="checkbox" checked={isSelected} onChange={onToggle}
           style={{ cursor: "pointer" }} className="rounded border-slate-300 text-blue-600" />
       </td>
-      <td className="px-3 py-2.5 font-mono text-xs text-slate-700 font-medium whitespace-nowrap">{order.orderNumber}</td>
-      <td className="px-3 py-2.5 text-slate-800 max-w-[220px]">
-        <span className="block truncate" title={order.product}>{order.product}</span>
-      </td>
-      {showAccount && (
-        <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">
-          {accountName.split(" ").slice(0, 2).join(" ")}
-        </td>
-      )}
-      <td className="px-3 py-2.5"><StatusBadge status={order.status} /></td>
-      <td className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">{order.submittedDate}</td>
-      <td className="px-3 py-2.5 text-right text-xs text-slate-700 whitespace-nowrap font-medium">
-        ${order.value.toLocaleString()}
-      </td>
-      <td className="px-3 py-2.5 text-xs text-slate-500 max-w-[180px]">
-        <span className="block truncate" title={address}>{address}</span>
-      </td>
-      <td className="px-3 py-2.5">
-        {family && colorConfig ? (
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${colorConfig.badge}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${colorConfig.dot}`} />
-            {family.name}
-          </span>
-        ) : (
-          <span className="text-xs text-slate-300">—</span>
-        )}
-      </td>
+      {columns.map((col) => renderCell(col, order, families, showAccount, accountName))}
     </tr>
   );
 }
 
-// ─── Card ─────────────────────────────────────────────────────────────────────
+// Renders the correct <td> for each column key
+function renderCell(
+  col: ColDef, order: Order, families: FamilyRef[], showAccount: boolean, accountName: string,
+): React.ReactElement | null {
+  const family      = families.find((f) => f.id === order.familyId);
+  const colorConfig = family ? FAMILY_COLORS.find((c) => c.value === family.color) : null;
+
+  switch (col.key) {
+    case "orderNumber":
+      return (
+        <td key="orderNumber" className="px-3 py-2.5 font-mono text-xs text-slate-700 font-medium whitespace-nowrap">
+          {order.orderNumber}
+        </td>
+      );
+    case "product":
+      return (
+        <td key="product" className="px-3 py-2.5 text-slate-800 max-w-[220px]">
+          <span className="block truncate" title={order.product}>{order.product}</span>
+        </td>
+      );
+    case "account":
+      if (!showAccount) return null;
+      return (
+        <td key="account" className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">
+          {accountName.split(" ").slice(0, 2).join(" ")}
+        </td>
+      );
+    case "status":
+      return (
+        <td key="status" className="px-3 py-2.5">
+          <StatusBadge status={order.status} />
+        </td>
+      );
+    case "submittedDate":
+      return (
+        <td key="submittedDate" className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">
+          {order.submittedDate}
+        </td>
+      );
+    case "value":
+      return (
+        <td key="value" className="px-3 py-2.5 text-right text-xs text-slate-700 whitespace-nowrap font-medium">
+          ${order.value.toLocaleString()}
+        </td>
+      );
+    case "address":
+      return (
+        <td key="address" className="px-3 py-2.5 text-xs text-slate-500 max-w-[180px]">
+          <span className="block truncate" title={order.address}>{order.address}</span>
+        </td>
+      );
+    case "family":
+      return (
+        <td key="family" className="px-3 py-2.5">
+          {family && colorConfig ? (
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${colorConfig.badge}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${colorConfig.dot}`} />
+              {family.name}
+            </span>
+          ) : (
+            <span className="text-xs text-slate-300">—</span>
+          )}
+        </td>
+      );
+    default:
+      return null;
+  }
+}
+
+// ─── Card view ────────────────────────────────────────────────────────────────
 
 function OrderCard({
   order, isSelected, onToggle, families, showAccount, accountName, address,
@@ -478,62 +551,40 @@ function OrderCard({
 
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
+      ref={setNodeRef} {...listeners} {...attributes}
       style={{ touchAction: "none", cursor: isDragging ? "grabbing" : "grab" }}
-      className={`
-        bg-white rounded-xl border-l-4 border border-slate-200 shadow-sm
-        select-none transition-all duration-150
+      className={`bg-white rounded-xl border-l-4 border border-slate-200 shadow-sm select-none transition-all duration-150
         ${STATUS_CARD_BORDER[order.status]}
         ${isDragging ? "opacity-40 shadow-none" : "hover:shadow-md hover:-translate-y-0.5"}
-        ${isSelected ? "ring-2 ring-blue-400 ring-offset-1" : ""}
-      `}
+        ${isSelected ? "ring-2 ring-blue-400 ring-offset-1" : ""}`}
     >
       <div className="p-3.5">
-        {/* Top row — checkbox + status */}
         <div className="flex items-start justify-between gap-2 mb-2.5">
           <div onPointerDown={(e) => e.stopPropagation()} className="flex items-center mt-0.5">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={onToggle}
-              style={{ cursor: "pointer" }}
-              className="rounded border-slate-300 text-blue-600"
-            />
+            <input type="checkbox" checked={isSelected} onChange={onToggle}
+              style={{ cursor: "pointer" }} className="rounded border-slate-300 text-blue-600" />
           </div>
           <StatusBadge status={order.status} />
         </div>
-
-        {/* Order number */}
         <div className="font-mono text-xs text-slate-400 font-medium mb-1">{order.orderNumber}</div>
-
-        {/* Product name */}
         <div className="text-sm font-semibold text-slate-800 leading-snug mb-3" title={order.product}>
           {order.product}
         </div>
-
-        {/* Date + value */}
         <div className="flex items-center justify-between text-xs">
           <span className="text-slate-400">{order.submittedDate}</span>
           <span className="font-semibold text-slate-700">${order.value.toLocaleString()}</span>
         </div>
-
-        {/* Account (linked view) */}
         {showAccount && accountName && (
           <div className="text-xs text-slate-400 mt-1.5 truncate">{accountName}</div>
         )}
-
-        {/* Service address */}
         <div className="flex items-start gap-1 mt-1.5">
           <svg className="w-3 h-3 text-slate-300 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
           <span className="text-xs text-slate-400 leading-tight" title={address}>{address}</span>
         </div>
-
-        {/* Family badge */}
         {family && colorConfig ? (
           <div className="mt-3 pt-2.5 border-t border-slate-100">
             <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium w-full justify-center ${colorConfig.badge}`}>
