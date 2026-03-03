@@ -362,10 +362,17 @@ function ColHeader({
 
   return (
     <th
-      className={`px-3 py-2.5 text-${col.align ?? "left"} text-xs uppercase tracking-wide whitespace-nowrap
-        transition-colors
-        ${isDragging ? "opacity-30" : ""}
-        ${isOver ? "bg-blue-50 border-l-2 border-blue-400" : "bg-white"}`}
+      draggable
+      onDragStart={(e) => {
+        onDragStart(col.key);
+        const ghost = document.createElement("div");
+        ghost.textContent = col.label;
+        ghost.style.cssText = "position:fixed;top:-999px;padding:4px 10px;background:#fff;border:1px solid #93c5fd;border-radius:6px;font-size:11px;font-weight:700;color:#1d4ed8;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15)";
+        document.body.appendChild(ghost);
+        e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 14);
+        requestAnimationFrame(() => document.body.removeChild(ghost));
+      }}
+      onDragEnd={onDragEnd}
       onDragOver={(e) => {
         if (!draggedCol) return;
         e.preventDefault();
@@ -376,47 +383,23 @@ function ColHeader({
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverCol(null);
       }}
       onDrop={(e) => { e.preventDefault(); onDrop(col.key); setDragOverCol(null); }}
+      onClick={() => { if (col.sortKey) onSort(col.sortKey); }}
+      className={`px-3 py-2.5 text-${col.align ?? "left"} text-xs uppercase tracking-wide whitespace-nowrap
+        select-none transition-colors cursor-grab active:cursor-grabbing
+        ${col.sortKey ? "hover:bg-slate-50" : ""}
+        ${isDragging ? "opacity-30" : ""}
+        ${isOver ? "bg-blue-50 border-l-2 border-blue-400" : ""}`}
     >
-      <div className={`inline-flex items-center gap-1 ${col.align === "right" ? "flex-row-reverse" : ""}`}>
-        {/* Drag handle — native HTML drag */}
-        <span
-          draggable
-          onDragStart={(e) => {
-            e.stopPropagation();
-            onDragStart(col.key);
-            // Custom ghost: small pill with column label
-            const ghost = document.createElement("div");
-            ghost.textContent = col.label;
-            ghost.style.cssText = "position:fixed;top:-999px;padding:4px 10px;background:#fff;border:1px solid #93c5fd;border-radius:6px;font-size:11px;font-weight:700;color:#1d4ed8;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15)";
-            document.body.appendChild(ghost);
-            e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 14);
-            requestAnimationFrame(() => document.body.removeChild(ghost));
-          }}
-          onDragEnd={onDragEnd}
-          className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors flex-shrink-0 select-none"
-          title="Drag to reorder column"
-        >
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M9 5a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zM9 12a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zM9 19a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2z" />
-          </svg>
-        </span>
-
-        {/* Label — click to sort */}
-        {col.sortKey ? (
-          <button
-            onClick={() => onSort(col.sortKey!)}
-            className={`group flex items-center gap-0.5 font-medium transition-colors
-              ${isActive ? "text-blue-600" : "text-slate-600 hover:text-slate-900"}`}
-          >
-            {col.label}
-            <span className={`transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-40"}`}>
-              {isActive && sortDir === "asc"
-                ? <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
-                : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>}
-            </span>
-          </button>
-        ) : (
-          <span className="font-medium text-slate-600">{col.label}</span>
+      <div className={`inline-flex items-center gap-0.5 font-medium
+        ${col.sortKey ? (isActive ? "text-blue-600" : "text-slate-600") : "text-slate-600"}`}
+      >
+        {col.label}
+        {col.sortKey && (
+          <span className={`transition-opacity ${isActive ? "opacity-100" : "opacity-0"}`}>
+            {isActive && sortDir === "asc"
+              ? <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" /></svg>
+              : <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>}
+          </span>
         )}
       </div>
     </th>
