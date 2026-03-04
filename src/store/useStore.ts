@@ -1,8 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import type { Customer, Order, OrderFamily, Communication } from "@/types";
-import { INITIAL_CUSTOMERS, INITIAL_ORDERS, INITIAL_FAMILIES, INITIAL_COMMUNICATIONS } from "@/data/placeholder";
+import type { AppUser, Customer, Order, OrderFamily, Communication } from "@/types";
+import { INITIAL_CUSTOMERS, INITIAL_ORDERS, INITIAL_FAMILIES, INITIAL_COMMUNICATIONS, INITIAL_USERS } from "@/data/placeholder";
 
 const COLORS = ["blue", "green", "purple", "orange", "red", "teal", "pink", "yellow"];
 
@@ -37,10 +37,22 @@ interface StoreState {
   communications: Communication[];
   sendCommunication: (comm: Omit<Communication, "id">) => void;
 
+  // Read tracking — keys: "customer:id" | "family:id" | "order:id"
+  readThreadKeys: Set<string>;
+  markThreadRead: (key: string) => void;
+  markThreadUnread: (key: string) => void;
+
+  // Multi-user
+  users: AppUser[];
+  currentUserId: string;
+  switchUser: (id: string) => void;
+  addCustomerToUser: (customerId: string) => void;
+  removeCustomerFromUser: (customerId: string) => void;
+
   // Computed helpers
   getVisibleCustomerIds: () => string[];
-  // All customers in the linked group — used for family visibility regardless of viewLinkedOrders
   getLinkedGroupIds: () => string[];
+  getCurrentUser: () => AppUser | undefined;
 }
 
 let familyCounter = 0;
@@ -53,6 +65,10 @@ export const useStore = create<StoreState>((set, get) => ({
   selectedCustomerId: null,
   selectedOrderIds: new Set(),
   viewLinkedOrders: false,
+  readThreadKeys: new Set(),
+
+  users: INITIAL_USERS,
+  currentUserId: INITIAL_USERS[0].id,
 
   selectCustomer: (id) =>
     set({ selectedCustomerId: id, selectedOrderIds: new Set(), viewLinkedOrders: false }),
@@ -136,6 +152,43 @@ export const useStore = create<StoreState>((set, get) => ({
     set((state) => ({ communications: [...state.communications, { ...comm, id }] }));
   },
 
+  markThreadRead: (key) =>
+    set((state) => {
+      const next = new Set(state.readThreadKeys);
+      next.add(key);
+      return { readThreadKeys: next };
+    }),
+
+  markThreadUnread: (key) =>
+    set((state) => {
+      const next = new Set(state.readThreadKeys);
+      next.delete(key);
+      return { readThreadKeys: next };
+    }),
+
+  switchUser: (id) =>
+    set({ currentUserId: id, selectedCustomerId: null, selectedOrderIds: new Set(), viewLinkedOrders: false }),
+
+  addCustomerToUser: (customerId) =>
+    set((state) => ({
+      users: state.users.map((u) =>
+        u.id === state.currentUserId && !u.customerIds.includes(customerId)
+          ? { ...u, customerIds: [...u.customerIds, customerId] }
+          : u
+      ),
+    })),
+
+  removeCustomerFromUser: (customerId) =>
+    set((state) => ({
+      users: state.users.map((u) =>
+        u.id === state.currentUserId
+          ? { ...u, customerIds: u.customerIds.filter((id) => id !== customerId) }
+          : u
+      ),
+      selectedCustomerId:
+        state.selectedCustomerId === customerId ? null : state.selectedCustomerId,
+    })),
+
   getVisibleCustomerIds: () => {
     const { selectedCustomerId, customers, viewLinkedOrders } = get();
     if (!selectedCustomerId) return [];
@@ -151,6 +204,11 @@ export const useStore = create<StoreState>((set, get) => ({
     const customer = customers.find((c) => c.id === selectedCustomerId);
     if (!customer) return [selectedCustomerId];
     return [selectedCustomerId, ...customer.linkedCustomerIds];
+  },
+
+  getCurrentUser: () => {
+    const { users, currentUserId } = get();
+    return users.find((u) => u.id === currentUserId);
   },
 }));
 

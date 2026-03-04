@@ -20,9 +20,17 @@ export interface Order {
   product: string;
   status: OrderStatus;
   submittedDate: string;
+  dueDate: string;
   value: number;
   address: string;
   familyId: string | null;
+}
+
+export interface AppUser {
+  id: string;
+  name: string;
+  email: string;
+  customerIds: string[];
 }
 
 export interface OrderFamily {

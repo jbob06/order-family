@@ -10,8 +10,8 @@ import { StatusBadge } from "./StatusBadge";
 
 // ─── Column definitions ───────────────────────────────────────────────────────
 
-type ColKey = "orderNumber" | "product" | "account" | "status" | "submittedDate" | "value" | "address" | "family";
-type SortCol = "orderNumber" | "product" | "status" | "submittedDate" | "value" | "family";
+type ColKey = "orderNumber" | "product" | "account" | "status" | "submittedDate" | "dueDate" | "value" | "address" | "family";
+type SortCol = "orderNumber" | "product" | "status" | "submittedDate" | "dueDate" | "value" | "family";
 type FamilyRef = { id: string; name: string; color: string };
 
 interface ColDef {
@@ -27,12 +27,13 @@ const ALL_COLUMNS: ColDef[] = [
   { key: "account",       label: "Account" },
   { key: "status",        label: "Status",    sortKey: "status" },
   { key: "submittedDate", label: "Submitted", sortKey: "submittedDate" },
+  { key: "dueDate",       label: "Due Date",  sortKey: "dueDate" },
   { key: "value",         label: "Value",     sortKey: "value",  align: "right" },
   { key: "address",       label: "Address" },
   { key: "family",        label: "Family",    sortKey: "family" },
 ];
 
-const DEFAULT_COL_ORDER: ColKey[] = ["orderNumber", "product", "account", "status", "submittedDate", "value", "address", "family"];
+const DEFAULT_COL_ORDER: ColKey[] = ["orderNumber", "product", "account", "status", "submittedDate", "dueDate", "value", "address", "family"];
 
 const STATUS_OPTIONS: { value: OrderStatus | "all"; label: string }[] = [
   { value: "all",       label: "All Statuses" },
@@ -47,7 +48,8 @@ const SORT_OPTIONS = [
   { value: "orderNumber",   label: "Order #" },
   { value: "product",       label: "Product" },
   { value: "status",        label: "Status" },
-  { value: "submittedDate", label: "Date" },
+  { value: "submittedDate", label: "Submitted" },
+  { value: "dueDate",       label: "Due Date" },
   { value: "value",         label: "Value" },
   { value: "family",        label: "Family" },
 ];
@@ -112,6 +114,7 @@ export function OrdersPanel({ onCreateFamily }: Props) {
         case "product":       cmp = a.product.localeCompare(b.product); break;
         case "status":        cmp = a.status.localeCompare(b.status); break;
         case "submittedDate": cmp = a.submittedDate.localeCompare(b.submittedDate); break;
+        case "dueDate":       cmp = a.dueDate.localeCompare(b.dueDate); break;
         case "value":         cmp = a.value - b.value; break;
         case "family": {
           const af = families.find((f) => f.id === a.familyId)?.name ?? "";
@@ -477,6 +480,14 @@ function renderCell(
           {order.submittedDate}
         </td>
       );
+    case "dueDate": {
+      const isOverdue = order.status !== "billing" && order.dueDate < new Date().toISOString().slice(0, 10);
+      return (
+        <td key="dueDate" className="px-3 py-2.5 text-xs whitespace-nowrap">
+          <span className={isOverdue ? "text-red-600 font-semibold" : "text-slate-500"}>{order.dueDate}</span>
+        </td>
+      );
+    }
     case "value":
       return (
         <td key="value" className="px-3 py-2.5 text-right text-xs text-slate-700 whitespace-nowrap font-medium">
@@ -547,6 +558,9 @@ function OrderCard({
         <div className="flex items-center justify-between text-xs">
           <span className="text-slate-400">{order.submittedDate}</span>
           <span className="font-semibold text-slate-700">${order.value.toLocaleString()}</span>
+        </div>
+        <div className="text-xs text-slate-400 mt-1">
+          Due: <span className={order.status !== "billing" && order.dueDate < new Date().toISOString().slice(0, 10) ? "text-red-600 font-semibold" : ""}>{order.dueDate}</span>
         </div>
         {showAccount && accountName && (
           <div className="text-xs text-slate-400 mt-1.5 truncate">{accountName}</div>
