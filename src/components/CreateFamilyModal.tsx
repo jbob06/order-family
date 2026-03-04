@@ -23,25 +23,25 @@ export function CreateFamilyModal({ onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
-        <h2 className="text-base font-semibold text-slate-900 mb-4">Create Order Family</h2>
+      <div className="absolute inset-0 bg-black/30 dark:bg-black/50" onClick={onClose} />
+      <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">Create Order Family</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Family Name</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Family Name</label>
             <input
               autoFocus
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Network Upgrade Phase 1"
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Color</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Color</label>
             <div className="flex flex-wrap gap-2">
               {FAMILY_COLORS.map((c) => (
                 <button
@@ -49,7 +49,7 @@ export function CreateFamilyModal({ onClose }: Props) {
                   type="button"
                   onClick={() => setColor(c.value)}
                   className={`w-8 h-8 rounded-full ${c.dot} transition-transform ${
-                    color === c.value ? "ring-2 ring-offset-2 ring-slate-400 scale-110" : "hover:scale-105"
+                    color === c.value ? "ring-2 ring-offset-2 dark:ring-offset-slate-900 ring-slate-400 scale-110" : "hover:scale-105"
                   }`}
                   title={c.label}
                 />
@@ -61,7 +61,7 @@ export function CreateFamilyModal({ onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
+              className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               Cancel
             </button>

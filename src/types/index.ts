@@ -41,14 +41,14 @@ export interface OrderFamily {
 }
 
 export const FAMILY_COLORS = [
-  { value: "blue", label: "Blue", bg: "bg-blue-100", border: "border-blue-400", badge: "bg-blue-100 text-blue-800", dot: "bg-blue-400" },
-  { value: "green", label: "Green", bg: "bg-green-100", border: "border-green-400", badge: "bg-green-100 text-green-800", dot: "bg-green-400" },
-  { value: "purple", label: "Purple", bg: "bg-purple-100", border: "border-purple-400", badge: "bg-purple-100 text-purple-800", dot: "bg-purple-400" },
-  { value: "orange", label: "Orange", bg: "bg-orange-100", border: "border-orange-400", badge: "bg-orange-100 text-orange-800", dot: "bg-orange-400" },
-  { value: "red", label: "Red", bg: "bg-red-100", border: "border-red-400", badge: "bg-red-100 text-red-800", dot: "bg-red-400" },
-  { value: "teal", label: "Teal", bg: "bg-teal-100", border: "border-teal-400", badge: "bg-teal-100 text-teal-800", dot: "bg-teal-400" },
-  { value: "pink", label: "Pink", bg: "bg-pink-100", border: "border-pink-400", badge: "bg-pink-100 text-pink-800", dot: "bg-pink-400" },
-  { value: "yellow", label: "Yellow", bg: "bg-yellow-100", border: "border-yellow-400", badge: "bg-yellow-100 text-yellow-800", dot: "bg-yellow-400" },
+  { value: "blue",   label: "Blue",   bg: "bg-blue-100 dark:bg-blue-900/30",     border: "border-blue-400",   badge: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",     dot: "bg-blue-400" },
+  { value: "green",  label: "Green",  bg: "bg-green-100 dark:bg-green-900/30",   border: "border-green-400",  badge: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200",   dot: "bg-green-400" },
+  { value: "purple", label: "Purple", bg: "bg-purple-100 dark:bg-purple-900/30", border: "border-purple-400", badge: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200", dot: "bg-purple-400" },
+  { value: "orange", label: "Orange", bg: "bg-orange-100 dark:bg-orange-900/30", border: "border-orange-400", badge: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200", dot: "bg-orange-400" },
+  { value: "red",    label: "Red",    bg: "bg-red-100 dark:bg-red-900/30",       border: "border-red-400",    badge: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",       dot: "bg-red-400" },
+  { value: "teal",   label: "Teal",   bg: "bg-teal-100 dark:bg-teal-900/30",    border: "border-teal-400",   badge: "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200",    dot: "bg-teal-400" },
+  { value: "pink",   label: "Pink",   bg: "bg-pink-100 dark:bg-pink-900/30",    border: "border-pink-400",   badge: "bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-200",    dot: "bg-pink-400" },
+  { value: "yellow", label: "Yellow", bg: "bg-yellow-100 dark:bg-yellow-900/30", border: "border-yellow-400", badge: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200", dot: "bg-yellow-400" },
 ] as const;
 
 export type FamilyColor = typeof FAMILY_COLORS[number]["value"];

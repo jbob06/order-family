@@ -160,48 +160,48 @@ export function OrdersPanel({ onCreateFamily }: Props) {
 
   if (!selectedCustomerId) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-50">
+      <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-800">
         <div className="text-center">
-          <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          <p className="text-slate-400 text-sm">Select a customer to view orders</p>
+          <p className="text-slate-400 dark:text-slate-500 text-sm">Select a customer to view orders</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
+    <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-800">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-slate-200 px-5 py-3">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-5 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">{selectedCustomer?.name}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{selectedCustomer?.name}</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {selectedCustomer?.accountNumber} · {selectedCustomer?.industry}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {linkedCustomers.length > 0 && (
-              <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+              <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
                 <input type="checkbox" checked={viewLinkedOrders} onChange={(e) => setViewLinkedOrders(e.target.checked)}
-                  className="rounded border-slate-300 text-blue-600" />
+                  className="rounded border-slate-300 dark:border-slate-600 text-blue-600" />
                 Show linked accounts ({linkedCustomers.length})
               </label>
             )}
-            <div className="flex items-center border border-slate-200 rounded-md overflow-hidden">
+            <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-md overflow-hidden">
               <button onClick={() => setView("table")} title="Table view"
-                className={`px-2 py-1.5 transition-colors ${view === "table" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                className={`px-2 py-1.5 transition-colors ${view === "table" ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                     d="M3 10h18M3 14h18M10 4v16M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" />
                 </svg>
               </button>
               <button onClick={() => setView("cards")} title="Card view"
-                className={`px-2 py-1.5 transition-colors border-l border-slate-200 ${view === "cards" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                className={`px-2 py-1.5 transition-colors border-l border-slate-200 dark:border-slate-700 ${view === "cards" ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                     d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -221,25 +221,25 @@ export function OrdersPanel({ onCreateFamily }: Props) {
         {/* Filters row */}
         <div className="flex items-center gap-2 mt-3">
           <input type="text" placeholder="Search orders..." value={search} onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 max-w-xs px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            className="flex-1 max-w-xs px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500" />
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as OrderStatus | "all")}
-            className="px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            className="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
             {STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
-          <div className="flex items-center gap-1 border border-slate-200 rounded-md overflow-hidden bg-white">
+          <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-600 rounded-md overflow-hidden bg-white dark:bg-slate-800">
             <select value={sortCol} onChange={(e) => setSortCol(e.target.value as SortCol)}
-              className="pl-2 pr-1 py-1.5 text-xs text-slate-600 bg-transparent focus:outline-none">
+              className="pl-2 pr-1 py-1.5 text-xs text-slate-600 dark:text-slate-400 bg-transparent focus:outline-none">
               {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <button onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-              className="px-2 py-1.5 text-slate-500 hover:bg-slate-50 border-l border-slate-200 transition-colors"
+              className="px-2 py-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 border-l border-slate-200 dark:border-slate-600 transition-colors"
               title={sortDir === "asc" ? "Ascending" : "Descending"}>
               {sortDir === "asc"
                 ? <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9M3 12h5m10 0l-4-4m4 4l-4 4" /></svg>
                 : <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9M3 12h5m10 4l-4 4m4-4l-4-4" /></svg>}
             </button>
           </div>
-          <span className="text-xs text-slate-400">{visibleOrders.length} orders</span>
+          <span className="text-xs text-slate-400 dark:text-slate-500">{visibleOrders.length} orders</span>
         </div>
       </div>
 
@@ -275,11 +275,11 @@ export function OrdersPanel({ onCreateFamily }: Props) {
       <div className="flex-1 overflow-y-auto">
         {view === "table" ? (
           <table className="w-full text-sm">
-            <thead className="bg-white border-b border-slate-200 sticky top-0 z-10">
+            <thead className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-2.5 w-10">
                   <input type="checkbox" checked={allSelected} onChange={handleSelectAll}
-                    className="rounded border-slate-300 text-blue-600" />
+                    className="rounded border-slate-300 dark:border-slate-600 text-blue-600" />
                 </th>
                 {visibleColumns.map((col) => (
                   <ColHeader
@@ -314,7 +314,7 @@ export function OrdersPanel({ onCreateFamily }: Props) {
               ))}
               {visibleOrders.length === 0 && (
                 <tr>
-                  <td colSpan={visibleColumns.length + 1} className="text-center py-12 text-slate-400 text-sm">
+                  <td colSpan={visibleColumns.length + 1} className="text-center py-12 text-slate-400 dark:text-slate-500 text-sm">
                     No orders match the current filters
                   </td>
                 </tr>
@@ -336,7 +336,7 @@ export function OrdersPanel({ onCreateFamily }: Props) {
               />
             ))}
             {visibleOrders.length === 0 && (
-              <div className="col-span-full text-center py-16 text-slate-400 text-sm">
+              <div className="col-span-full text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
                 No orders match the current filters
               </div>
             )}
@@ -389,12 +389,12 @@ function ColHeader({
       onMouseUp={() => { if (col.sortKey) onSort(col.sortKey); }}
       className={`px-3 py-2.5 text-${col.align ?? "left"} text-xs uppercase tracking-wide whitespace-nowrap
         select-none transition-colors cursor-grab active:cursor-grabbing
-        ${col.sortKey ? "hover:bg-slate-50" : ""}
+        ${col.sortKey ? "hover:bg-slate-50 dark:hover:bg-slate-800" : ""}
         ${isDragging ? "opacity-30" : ""}
-        ${isOver ? "bg-blue-50 border-l-2 border-blue-400" : ""}`}
+        ${isOver ? "bg-blue-50 dark:bg-blue-900/30 border-l-2 border-blue-400" : ""}`}
     >
       <div className={`group inline-flex items-center gap-0.5 font-medium
-        ${col.sortKey ? (isActive ? "text-blue-600" : "text-slate-600") : "text-slate-600"}`}
+        ${col.sortKey ? (isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400") : "text-slate-600 dark:text-slate-400"}`}
       >
         {col.label}
         {col.sortKey && (
@@ -428,13 +428,13 @@ function OrderRow({
       {...listeners}
       {...attributes}
       style={{ touchAction: "none", cursor: isDragging ? "grabbing" : "grab" }}
-      className={`border-b border-slate-100 transition-colors select-none ${
+      className={`border-b border-slate-100 dark:border-slate-700 transition-colors select-none ${
         isDragging ? "opacity-40" : ""
-      } ${isSelected ? "bg-blue-50" : "bg-white hover:bg-slate-50"}`}
+      } ${isSelected ? "bg-blue-50 dark:bg-blue-900/20" : "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
     >
       <td className="px-4 py-2.5" onPointerDown={(e) => e.stopPropagation()}>
         <input type="checkbox" checked={isSelected} onChange={onToggle}
-          style={{ cursor: "pointer" }} className="rounded border-slate-300 text-blue-600" />
+          style={{ cursor: "pointer" }} className="rounded border-slate-300 dark:border-slate-600 text-blue-600" />
       </td>
       {columns.map((col) => renderCell(col, order, families, showAccount, accountName))}
     </tr>
@@ -451,20 +451,20 @@ function renderCell(
   switch (col.key) {
     case "orderNumber":
       return (
-        <td key="orderNumber" className="px-3 py-2.5 font-mono text-xs text-slate-700 font-medium whitespace-nowrap">
+        <td key="orderNumber" className="px-3 py-2.5 font-mono text-xs text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">
           {order.orderNumber}
         </td>
       );
     case "product":
       return (
-        <td key="product" className="px-3 py-2.5 text-slate-800 max-w-[220px]">
+        <td key="product" className="px-3 py-2.5 text-slate-800 dark:text-slate-200 max-w-[220px]">
           <span className="block truncate" title={order.product}>{order.product}</span>
         </td>
       );
     case "account":
       if (!showAccount) return null;
       return (
-        <td key="account" className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">
+        <td key="account" className="px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
           {accountName.split(" ").slice(0, 2).join(" ")}
         </td>
       );
@@ -476,7 +476,7 @@ function renderCell(
       );
     case "submittedDate":
       return (
-        <td key="submittedDate" className="px-3 py-2.5 text-xs text-slate-500 whitespace-nowrap">
+        <td key="submittedDate" className="px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
           {order.submittedDate}
         </td>
       );
@@ -484,19 +484,19 @@ function renderCell(
       const isOverdue = order.status !== "billing" && order.dueDate < new Date().toISOString().slice(0, 10);
       return (
         <td key="dueDate" className="px-3 py-2.5 text-xs whitespace-nowrap">
-          <span className={isOverdue ? "text-red-600 font-semibold" : "text-slate-500"}>{order.dueDate}</span>
+          <span className={isOverdue ? "text-red-600 dark:text-red-400 font-semibold" : "text-slate-500 dark:text-slate-400"}>{order.dueDate}</span>
         </td>
       );
     }
     case "value":
       return (
-        <td key="value" className="px-3 py-2.5 text-right text-xs text-slate-700 whitespace-nowrap font-medium">
+        <td key="value" className="px-3 py-2.5 text-right text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap font-medium">
           ${order.value.toLocaleString()}
         </td>
       );
     case "address":
       return (
-        <td key="address" className="px-3 py-2.5 text-xs text-slate-500 max-w-[180px]">
+        <td key="address" className="px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400 max-w-[180px]">
           <span className="block truncate" title={order.address}>{order.address}</span>
         </td>
       );
@@ -509,7 +509,7 @@ function renderCell(
               {family.name}
             </span>
           ) : (
-            <span className="text-xs text-slate-300">—</span>
+            <span className="text-xs text-slate-300 dark:text-slate-600">—</span>
           )}
         </td>
       );
@@ -538,51 +538,51 @@ function OrderCard({
     <div
       ref={setNodeRef} {...listeners} {...attributes}
       style={{ touchAction: "none", cursor: isDragging ? "grabbing" : "grab" }}
-      className={`bg-white rounded-xl border-l-4 border border-slate-200 shadow-sm select-none transition-all duration-150
+      className={`bg-white dark:bg-slate-900 rounded-xl border-l-4 border border-slate-200 dark:border-slate-700 shadow-sm select-none transition-all duration-150
         ${STATUS_CARD_BORDER[order.status]}
         ${isDragging ? "opacity-40 shadow-none" : "hover:shadow-md hover:-translate-y-0.5"}
-        ${isSelected ? "ring-2 ring-blue-400 ring-offset-1" : ""}`}
+        ${isSelected ? "ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-slate-800" : ""}`}
     >
       <div className="p-3.5">
         <div className="flex items-start justify-between gap-2 mb-2.5">
           <div onPointerDown={(e) => e.stopPropagation()} className="flex items-center mt-0.5">
             <input type="checkbox" checked={isSelected} onChange={onToggle}
-              style={{ cursor: "pointer" }} className="rounded border-slate-300 text-blue-600" />
+              style={{ cursor: "pointer" }} className="rounded border-slate-300 dark:border-slate-600 text-blue-600" />
           </div>
           <StatusBadge status={order.status} />
         </div>
-        <div className="font-mono text-xs text-slate-400 font-medium mb-1">{order.orderNumber}</div>
-        <div className="text-sm font-semibold text-slate-800 leading-snug mb-3" title={order.product}>
+        <div className="font-mono text-xs text-slate-400 dark:text-slate-500 font-medium mb-1">{order.orderNumber}</div>
+        <div className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-snug mb-3" title={order.product}>
           {order.product}
         </div>
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-400">{order.submittedDate}</span>
-          <span className="font-semibold text-slate-700">${order.value.toLocaleString()}</span>
+          <span className="text-slate-400 dark:text-slate-500">{order.submittedDate}</span>
+          <span className="font-semibold text-slate-700 dark:text-slate-300">${order.value.toLocaleString()}</span>
         </div>
-        <div className="text-xs text-slate-400 mt-1">
-          Due: <span className={order.status !== "billing" && order.dueDate < new Date().toISOString().slice(0, 10) ? "text-red-600 font-semibold" : ""}>{order.dueDate}</span>
+        <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+          Due: <span className={order.status !== "billing" && order.dueDate < new Date().toISOString().slice(0, 10) ? "text-red-600 dark:text-red-400 font-semibold" : ""}>{order.dueDate}</span>
         </div>
         {showAccount && accountName && (
-          <div className="text-xs text-slate-400 mt-1.5 truncate">{accountName}</div>
+          <div className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 truncate">{accountName}</div>
         )}
         <div className="flex items-start gap-1 mt-1.5">
-          <svg className="w-3 h-3 text-slate-300 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 text-slate-300 dark:text-slate-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <span className="text-xs text-slate-400 leading-tight" title={address}>{address}</span>
+          <span className="text-xs text-slate-400 dark:text-slate-500 leading-tight" title={address}>{address}</span>
         </div>
         {family && colorConfig ? (
-          <div className="mt-3 pt-2.5 border-t border-slate-100">
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700">
             <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium w-full justify-center ${colorConfig.badge}`}>
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${colorConfig.dot}`} />
               {family.name}
             </span>
           </div>
         ) : (
-          <div className="mt-3 pt-2.5 border-t border-slate-100">
-            <span className="text-xs text-slate-300 block text-center">Unassigned — drag to a family</span>
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700">
+            <span className="text-xs text-slate-300 dark:text-slate-600 block text-center">Unassigned — drag to a family</span>
           </div>
         )}
       </div>

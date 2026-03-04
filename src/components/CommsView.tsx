@@ -317,50 +317,50 @@ function EmailCard({ comm }: { comm: Communication }) {
   const isOut = comm.direction === "outbound";
 
   return (
-    <div className={`rounded-xl border shadow-sm overflow-hidden ${isOut ? "bg-white border-slate-200" : "bg-slate-50 border-slate-200"}`}>
+    <div className={`rounded-xl border shadow-sm overflow-hidden ${isOut ? "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"}`}>
       <button
         onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50/80 transition-colors"
+        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors"
       >
         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5
-          ${isOut ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"}`}>
+          ${isOut ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300"}`}>
           {comm.fromName.charAt(0).toUpperCase()}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-slate-800 truncate">{comm.fromName}</span>
+            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{comm.fromName}</span>
             {comm.isAiGenerated && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700 flex-shrink-0">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 flex-shrink-0">
                 <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L9.5 8.5 3 11l6.5 2.5L12 20l2.5-6.5L21 11l-6.5-2.5z"/></svg>
                 AI
               </span>
             )}
-            <span className={`text-xs flex-shrink-0 ${isOut ? "text-blue-500" : "text-slate-400"}`}>
+            <span className={`text-xs flex-shrink-0 ${isOut ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}`}>
               {isOut ? "↑ Sent" : "↓ Received"}
             </span>
-            <span className="text-xs text-slate-400 ml-auto flex-shrink-0">{formatDate(comm.sentAt)}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500 ml-auto flex-shrink-0">{formatDate(comm.sentAt)}</span>
           </div>
-          <div className="text-sm font-medium text-slate-700 mt-0.5 truncate">{comm.subject}</div>
+          <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mt-0.5 truncate">{comm.subject}</div>
           {!expanded && (
-            <div className="text-xs text-slate-400 truncate mt-0.5">
+            <div className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">
               {comm.body.split("\n").find(l => l.trim()) ?? ""}
             </div>
           )}
         </div>
 
-        <svg className={`w-4 h-4 text-slate-400 flex-shrink-0 mt-1 transition-transform ${expanded ? "rotate-180" : ""}`}
+        <svg className={`w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0 mt-1 transition-transform ${expanded ? "rotate-180" : ""}`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-slate-100">
-          <div className="text-xs text-slate-400 mb-2">
+        <div className="px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-700">
+          <div className="text-xs text-slate-400 dark:text-slate-500 mb-2">
             <span className="font-medium">To:</span> {comm.toName} &lt;{comm.toEmail}&gt;
           </div>
-          <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans leading-relaxed">
+          <pre className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-sans leading-relaxed">
             {comm.body}
           </pre>
         </div>
@@ -393,24 +393,24 @@ function TreeNode({
         onClick={onClick}
         onContextMenu={onContextMenu}
         className={`w-full flex items-center gap-2 text-left transition-colors
-          ${selected ? "bg-blue-50 border-r-2 border-blue-500" : "hover:bg-slate-50"}
+          ${selected ? "bg-blue-50 dark:bg-blue-900/30 border-r-2 border-blue-500" : "hover:bg-slate-50 dark:hover:bg-slate-800"}
           ${indent === 0 ? "py-2.5 px-4" : indent === 1 ? "py-2 pl-7 pr-3" : "py-1.5 pl-10 pr-3"}`}
       >
         {dot && <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />}
         <div className="flex-1 min-w-0">
-          <div className={`truncate ${indent === 0 ? "text-sm font-medium text-slate-800" : indent === 1 ? "text-xs font-medium text-slate-700" : "text-xs text-slate-600"} ${selected ? (indent === 0 ? "text-blue-800" : "text-blue-700") : ""}`}>
+          <div className={`truncate ${indent === 0 ? "text-sm font-medium text-slate-800 dark:text-slate-200" : indent === 1 ? "text-xs font-medium text-slate-700 dark:text-slate-300" : "text-xs text-slate-600 dark:text-slate-400"} ${selected ? (indent === 0 ? "text-blue-800 dark:text-blue-200" : "text-blue-700 dark:text-blue-300") : ""}`}>
             {label}
           </div>
           {sublabel && (
-            <div className="text-xs text-slate-400 truncate">{sublabel}</div>
+            <div className="text-xs text-slate-400 dark:text-slate-500 truncate">{sublabel}</div>
           )}
           {lastSentAt && commCount > 0 && (
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-slate-400 dark:text-slate-500">
               {formatShortDate(lastSentAt)} · {commCount} msg{commCount !== 1 ? "s" : ""}
             </div>
           )}
           {commCount === 0 && (
-            <div className="text-xs text-slate-300">No messages</div>
+            <div className="text-xs text-slate-300 dark:text-slate-600">No messages</div>
           )}
         </div>
         {unread && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
@@ -424,9 +424,9 @@ function TreeNode({
 
 function ScopeBadge({ scope }: { scope: CommScope }) {
   const styles: Record<CommScope, string> = {
-    customer: "bg-slate-100 text-slate-600",
-    family:   "bg-blue-100 text-blue-700",
-    order:    "bg-amber-100 text-amber-700",
+    customer: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300",
+    family:   "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
+    order:    "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
   };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${styles[scope]}`}>
@@ -438,11 +438,11 @@ function ScopeBadge({ scope }: { scope: CommScope }) {
 // ─── Status badge (mini) ──────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
-  confirm:   "bg-amber-100 text-amber-800",
-  implement: "bg-blue-100 text-blue-800",
-  finalize:  "bg-purple-100 text-purple-800",
-  activate:  "bg-teal-100 text-teal-800",
-  billing:   "bg-green-100 text-green-800",
+  confirm:   "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  implement: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+  finalize:  "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  activate:  "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
+  billing:   "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
 };
 const STATUS_LABELS: Record<string, string> = {
   confirm: "Confirm", implement: "Implement", finalize: "Finalize",
@@ -461,15 +461,15 @@ function CtxMenu({
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
-        className="fixed z-50 w-44 bg-white border border-slate-200 rounded-lg shadow-lg py-1"
+        className="fixed z-50 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-1"
         style={{ left: x, top: y }}
       >
         {isRead ? (
           <button
             onClick={() => { onMarkUnread(); onClose(); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 text-left"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-left"
           >
-            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             Mark as unread
@@ -477,9 +477,9 @@ function CtxMenu({
         ) : (
           <button
             onClick={() => { onMarkRead(); onClose(); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 text-left"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-left"
           >
-            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Mark as read
@@ -655,10 +655,10 @@ export function CommsView() {
     <div className="flex flex-1 overflow-hidden">
 
       {/* ── Left panel ───────────────────────────────────────────────────── */}
-      <div className="w-72 border-r border-slate-200 bg-white flex flex-col overflow-hidden flex-shrink-0">
-        <div className="px-4 py-3 border-b border-slate-200 flex-shrink-0">
-          <h2 className="text-sm font-semibold text-slate-900">Communications</h2>
-          <p className="text-xs text-slate-500 mt-0.5">By customer, family, or order</p>
+      <div className="w-72 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col overflow-hidden flex-shrink-0">
+        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Communications</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">By customer, family, or order</p>
         </div>
 
         <div className="flex-1 overflow-y-auto py-1">
@@ -679,9 +679,9 @@ export function CommsView() {
                 <div className="flex items-stretch">
                   <button
                     onClick={() => toggleCust(customer.id)}
-                    className="flex items-center justify-center px-2 py-2.5 hover:bg-slate-50 transition-colors flex-shrink-0"
+                    className="flex items-center justify-center px-2 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
                   >
-                    <svg className={`w-3 h-3 text-slate-400 transition-transform ${isCustExpanded ? "rotate-90" : ""}`}
+                    <svg className={`w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform ${isCustExpanded ? "rotate-90" : ""}`}
                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                     </svg>
@@ -698,7 +698,7 @@ export function CommsView() {
 
                 {/* Families + orders under this customer */}
                 {isCustExpanded && (
-                  <div className="border-l border-slate-100 ml-5">
+                  <div className="border-l border-slate-100 dark:border-slate-800 ml-5">
                     {custFamilies.map(family => {
                       const fc      = FAMILY_COLORS.find(c => c.value === family.color);
                       const famCtx: SelectedCtx = { scope: "family", customerId: customer.id, familyId: family.id };
@@ -715,14 +715,14 @@ export function CommsView() {
                           onDragOver={e => handleFamDragOver(e, family.id)}
                           onDragLeave={() => setDragOverFamId(null)}
                           onDrop={e => handleFamDrop(e, family.id)}
-                          className={isDragTarget ? "bg-blue-50 rounded" : ""}
+                          className={isDragTarget ? "bg-blue-50 dark:bg-blue-900/20 rounded" : ""}
                         >
                           <div className="flex items-stretch">
                             <button
                               onClick={() => toggleFam(family.id)}
-                              className="flex items-center justify-center px-2 py-2 hover:bg-slate-50 transition-colors flex-shrink-0"
+                              className="flex items-center justify-center px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
                             >
-                              <svg className={`w-3 h-3 text-slate-300 transition-transform ${isFamExpanded ? "rotate-90" : ""}`}
+                              <svg className={`w-3 h-3 text-slate-300 dark:text-slate-600 transition-transform ${isFamExpanded ? "rotate-90" : ""}`}
                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                               </svg>
@@ -744,7 +744,7 @@ export function CommsView() {
                             const isOrdSelected = ctx?.scope === "order" && ctx.orderId === order.id;
                             const ordUnread = isUnread(ordCtx);
                             return (
-                              <div key={order.id} className="border-l border-slate-100 ml-4">
+                              <div key={order.id} className="border-l border-slate-100 dark:border-slate-800 ml-4">
                                 <TreeNode
                                   label={order.orderNumber}
                                   sublabel={order.product}
@@ -796,8 +796,8 @@ export function CommsView() {
 
           {myCustomers.length === 0 && (
             <div className="text-center py-10 px-4">
-              <p className="text-sm text-slate-400">No customers assigned.</p>
-              <p className="text-xs text-slate-300 mt-1">Use the Orders tab to add customers.</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500">No customers assigned.</p>
+              <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">Use the Orders tab to add customers.</p>
             </div>
           )}
         </div>
@@ -805,29 +805,29 @@ export function CommsView() {
 
       {/* ── Right panel ─────────────────────────────────────────────────── */}
       {!ctx ? (
-        <div className="flex-1 flex items-center justify-center bg-slate-50">
+        <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-800">
           <div className="text-center">
-            <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
                 d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            <p className="text-slate-400 text-sm">Select a customer, family, or order</p>
-            <p className="text-slate-300 text-xs mt-1">to view and send communications</p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm">Select a customer, family, or order</p>
+            <p className="text-slate-300 dark:text-slate-600 text-xs mt-1">to view and send communications</p>
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
+        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-800">
 
           {/* Header */}
-          <div className="bg-white border-b border-slate-200 px-5 py-3 flex-shrink-0">
+          <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-5 py-3 flex-shrink-0">
             <div className="flex items-start justify-between gap-3">
               <div>
                 {/* Breadcrumb */}
-                <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-400 mb-1">
+                <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-400 dark:text-slate-500 mb-1">
                   {headerParts.map((part, i) => (
                     <span key={i} className="flex items-center gap-1.5">
                       {i > 0 && <span>›</span>}
-                      <span className={i === headerParts.length - 1 ? "text-slate-700 font-medium" : ""}>{part}</span>
+                      <span className={i === headerParts.length - 1 ? "text-slate-700 dark:text-slate-300 font-medium" : ""}>{part}</span>
                     </span>
                   ))}
                 </div>
@@ -835,21 +835,21 @@ export function CommsView() {
                   {colorConfig && <span className={`w-2.5 h-2.5 rounded-full ${colorConfig.dot}`} />}
                   <ScopeBadge scope={ctx.scope} />
                   {ctxOrder && (
-                    <span className="text-sm text-slate-600 font-medium">{ctxOrder.product}</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">{ctxOrder.product}</span>
                   )}
                   {ctxOrder && (
-                    <span className="text-xs text-slate-400">{ctxOrder.address}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">{ctxOrder.address}</span>
                   )}
                 </div>
               </div>
 
               {/* Meta */}
-              <div className="text-right flex-shrink-0 text-xs text-slate-400">
+              <div className="text-right flex-shrink-0 text-xs text-slate-400 dark:text-slate-500">
                 <div>{threadComms.length} message{threadComms.length !== 1 ? "s" : ""}</div>
-                {ctxOrder && <div className="font-semibold text-slate-600 mt-0.5">${ctxOrder.value.toLocaleString()}/mo</div>}
+                {ctxOrder && <div className="font-semibold text-slate-600 dark:text-slate-400 mt-0.5">${ctxOrder.value.toLocaleString()}/mo</div>}
                 {ctxOrder && <div className="mt-0.5">Due: {ctxOrder.dueDate}</div>}
                 {ctxFamily && !ctxOrder && (
-                  <div className="font-semibold text-slate-600 mt-0.5">
+                  <div className="font-semibold text-slate-600 dark:text-slate-400 mt-0.5">
                     ${ctxFamilyOrders.reduce((s, o) => s + o.value, 0).toLocaleString()}/mo · {ctxFamilyOrders.length} orders
                   </div>
                 )}
@@ -859,23 +859,23 @@ export function CommsView() {
 
           {/* Family detail summary */}
           {ctxFamily && !ctxOrder && ctxFamilyOrders.length > 0 && (
-            <div className="bg-white border-b border-slate-200 px-5 py-3 flex-shrink-0">
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Orders in this family</div>
+            <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-5 py-3 flex-shrink-0">
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Orders in this family</div>
               <div className="flex flex-wrap gap-1.5">
                 {ctxFamilyOrders.map(o => (
-                  <div key={o.id} className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STATUS_STYLES[o.status] ?? "bg-slate-100 text-slate-600"}`}>
+                  <div key={o.id} className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1">
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STATUS_STYLES[o.status] ?? "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"}`}>
                       {STATUS_LABELS[o.status] ?? o.status}
                     </span>
-                    <span className="text-xs text-slate-700 font-mono">{o.orderNumber}</span>
-                    <span className="text-xs text-slate-500 max-w-[160px] truncate">{o.product}</span>
-                    <span className="text-xs text-slate-400">${o.value.toLocaleString()}</span>
+                    <span className="text-xs text-slate-700 dark:text-slate-300 font-mono">{o.orderNumber}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 max-w-[160px] truncate">{o.product}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">${o.value.toLocaleString()}</span>
                   </div>
                 ))}
               </div>
-              <div className="mt-2 text-xs text-slate-400">
+              <div className="mt-2 text-xs text-slate-400 dark:text-slate-500">
                 {ctxFamilyOrders.length} order{ctxFamilyOrders.length !== 1 ? "s" : ""} ·{" "}
-                Total: <span className="font-semibold text-slate-600">${ctxFamilyOrders.reduce((s, o) => s + o.value, 0).toLocaleString()}/mo</span>
+                Total: <span className="font-semibold text-slate-600 dark:text-slate-400">${ctxFamilyOrders.reduce((s, o) => s + o.value, 0).toLocaleString()}/mo</span>
                 {" · "}Products: {[...new Set(ctxFamilyOrders.map(o => o.product.split(" ")[0]))].join(", ")}
               </div>
             </div>
@@ -884,7 +884,7 @@ export function CommsView() {
           {/* Thread */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {threadComms.length === 0 && (
-              <div className="text-center py-16 text-slate-400 text-sm">
+              <div className="text-center py-16 text-slate-400 dark:text-slate-500 text-sm">
                 No messages yet at this level.
                 <br />Use the compose area below to send the first one.
               </div>
@@ -894,23 +894,23 @@ export function CommsView() {
           </div>
 
           {/* Compose */}
-          <div className="bg-white border-t border-slate-200 p-4 flex-shrink-0">
+          <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 p-4 flex-shrink-0">
             <div className="space-y-2">
               <input
                 type="text" placeholder="Subject" value={subject}
                 onChange={e => setSubject(e.target.value)}
-                className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
               />
               <textarea
                 placeholder="Write a message, or click Generate AI Update…"
                 value={body} onChange={e => setBody(e.target.value)}
                 rows={5}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
+                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
               />
               <div className="flex items-center gap-2 justify-end">
                 <button
                   onClick={handleGenerateAI} disabled={generating || sending}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-md hover:bg-violet-100 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-700 rounded-md hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors disabled:opacity-50"
                 >
                   {generating ? (
                     <><svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Generating…</>
