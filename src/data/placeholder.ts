@@ -80,7 +80,7 @@ export const INITIAL_COMMUNICATIONS: Communication[] = [
 
   // ── fam-001: NY Metro Infrastructure (Acme) ─────────────────────────────────────────────
   {
-    id: "comm-001", familyId: "fam-001", customerId: "cust-001", direction: "outbound", isAiGenerated: false,
+    id: "comm-001", scope: "family", orderId: null, familyId: "fam-001", customerId: "cust-001", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-10-01T13:00:00.000Z",
     fromName: "Sarah Chen — Account Manager", fromEmail: "s.chen@orderco.com",
     toName: "James Whitfield", toEmail: "j.whitfield@acmecommunications.com",
@@ -106,7 +106,7 @@ Sarah Chen
 Enterprise Account Manager`,
   },
   {
-    id: "comm-002", familyId: "fam-001", customerId: "cust-001", direction: "inbound", isAiGenerated: false,
+    id: "comm-002", scope: "family", orderId: null, familyId: "fam-001", customerId: "cust-001", direction: "inbound", isAiGenerated: false,
     sentAt: "2024-10-09T15:30:00.000Z",
     fromName: "James Whitfield", fromEmail: "j.whitfield@acmecommunications.com",
     toName: "Sarah Chen", toEmail: "s.chen@orderco.com",
@@ -128,7 +128,7 @@ James Whitfield
 Director of IT, Acme Communications Inc.`,
   },
   {
-    id: "comm-003", familyId: "fam-001", customerId: "cust-001", direction: "outbound", isAiGenerated: false,
+    id: "comm-003", scope: "family", orderId: null, familyId: "fam-001", customerId: "cust-001", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-10-16T10:15:00.000Z",
     fromName: "Sarah Chen — Account Manager", fromEmail: "s.chen@orderco.com",
     toName: "James Whitfield", toEmail: "j.whitfield@acmecommunications.com",
@@ -149,7 +149,7 @@ Best,
 Sarah Chen`,
   },
   {
-    id: "comm-004", familyId: "fam-001", customerId: "cust-001", direction: "outbound", isAiGenerated: true,
+    id: "comm-004", scope: "family", orderId: null, familyId: "fam-001", customerId: "cust-001", direction: "outbound", isAiGenerated: true,
     sentAt: "2024-10-28T11:00:00.000Z",
     fromName: "Sarah Chen — Account Manager", fromEmail: "s.chen@orderco.com",
     toName: "James Whitfield", toEmail: "j.whitfield@acmecommunications.com",
@@ -198,7 +198,7 @@ Account Management Team
 Enterprise Services Division`,
   },
   {
-    id: "comm-005", familyId: "fam-001", customerId: "cust-001", direction: "inbound", isAiGenerated: false,
+    id: "comm-005", scope: "family", orderId: null, familyId: "fam-001", customerId: "cust-001", direction: "inbound", isAiGenerated: false,
     sentAt: "2024-11-02T16:45:00.000Z",
     fromName: "James Whitfield", fromEmail: "j.whitfield@acmecommunications.com",
     toName: "Sarah Chen", toEmail: "s.chen@orderco.com",
@@ -216,7 +216,7 @@ James`,
 
   // ── fam-002: National Voice Platform (Acme) ─────────────────────────────────────────────
   {
-    id: "comm-006", familyId: "fam-002", customerId: "cust-001", direction: "outbound", isAiGenerated: false,
+    id: "comm-006", scope: "family", orderId: null, familyId: "fam-002", customerId: "cust-001", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-10-12T09:30:00.000Z",
     fromName: "Sarah Chen — Account Manager", fromEmail: "s.chen@orderco.com",
     toName: "James Whitfield", toEmail: "j.whitfield@acmecommunications.com",
@@ -240,7 +240,7 @@ Best,
 Sarah`,
   },
   {
-    id: "comm-007", familyId: "fam-002", customerId: "cust-001", direction: "outbound", isAiGenerated: true,
+    id: "comm-007", scope: "family", orderId: null, familyId: "fam-002", customerId: "cust-001", direction: "outbound", isAiGenerated: true,
     sentAt: "2024-10-20T10:00:00.000Z",
     fromName: "Sarah Chen — Account Manager", fromEmail: "s.chen@orderco.com",
     toName: "James Whitfield", toEmail: "j.whitfield@acmecommunications.com",
@@ -281,7 +281,7 @@ Account Management Team
 Enterprise Services Division`,
   },
   {
-    id: "comm-008", familyId: "fam-002", customerId: "cust-001", direction: "inbound", isAiGenerated: false,
+    id: "comm-008", scope: "family", orderId: null, familyId: "fam-002", customerId: "cust-001", direction: "inbound", isAiGenerated: false,
     sentAt: "2024-10-25T14:20:00.000Z",
     fromName: "James Whitfield", fromEmail: "j.whitfield@acmecommunications.com",
     toName: "Sarah Chen", toEmail: "s.chen@orderco.com",
@@ -298,7 +298,7 @@ Thanks,
 James`,
   },
   {
-    id: "comm-009", familyId: "fam-002", customerId: "cust-001", direction: "outbound", isAiGenerated: false,
+    id: "comm-009", scope: "family", orderId: null, familyId: "fam-002", customerId: "cust-001", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-10-31T11:30:00.000Z",
     fromName: "Sarah Chen — Account Manager", fromEmail: "s.chen@orderco.com",
     toName: "James Whitfield", toEmail: "j.whitfield@acmecommunications.com",
@@ -319,7 +319,7 @@ Sarah`,
 
   // ── fam-003: Financial Services Network (TeleCorp) ──────────────────────────────────────
   {
-    id: "comm-010", familyId: "fam-003", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
+    id: "comm-010", scope: "family", orderId: null, familyId: "fam-003", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-09-20T09:00:00.000Z",
     fromName: "Michael Torres — Account Manager", fromEmail: "m.torres@orderco.com",
     toName: "Maria Santos", toEmail: "m.santos@telecorpsystems.com",
@@ -345,7 +345,7 @@ Michael Torres
 Senior Account Manager`,
   },
   {
-    id: "comm-011", familyId: "fam-003", customerId: "cust-002", direction: "inbound", isAiGenerated: false,
+    id: "comm-011", scope: "family", orderId: null, familyId: "fam-003", customerId: "cust-002", direction: "inbound", isAiGenerated: false,
     sentAt: "2024-09-28T14:15:00.000Z",
     fromName: "Maria Santos", fromEmail: "m.santos@telecorpsystems.com",
     toName: "Michael Torres", toEmail: "m.torres@orderco.com",
@@ -365,7 +365,7 @@ Maria Santos
 VP Infrastructure, TeleCorp Systems`,
   },
   {
-    id: "comm-012", familyId: "fam-003", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
+    id: "comm-012", scope: "family", orderId: null, familyId: "fam-003", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-10-05T10:30:00.000Z",
     fromName: "Michael Torres — Account Manager", fromEmail: "m.torres@orderco.com",
     toName: "Maria Santos", toEmail: "m.santos@telecorpsystems.com",
@@ -386,7 +386,7 @@ Best,
 Michael`,
   },
   {
-    id: "comm-013", familyId: "fam-003", customerId: "cust-002", direction: "outbound", isAiGenerated: true,
+    id: "comm-013", scope: "family", orderId: null, familyId: "fam-003", customerId: "cust-002", direction: "outbound", isAiGenerated: true,
     sentAt: "2024-10-15T11:00:00.000Z",
     fromName: "Michael Torres — Account Manager", fromEmail: "m.torres@orderco.com",
     toName: "Maria Santos", toEmail: "m.santos@telecorpsystems.com",
@@ -435,7 +435,7 @@ Account Management Team
 Enterprise Services Division`,
   },
   {
-    id: "comm-014", familyId: "fam-003", customerId: "cust-002", direction: "inbound", isAiGenerated: false,
+    id: "comm-014", scope: "family", orderId: null, familyId: "fam-003", customerId: "cust-002", direction: "inbound", isAiGenerated: false,
     sentAt: "2024-10-23T15:00:00.000Z",
     fromName: "Maria Santos", fromEmail: "m.santos@telecorpsystems.com",
     toName: "Michael Torres", toEmail: "m.torres@orderco.com",
@@ -453,7 +453,7 @@ This is now a priority for us.
 Maria`,
   },
   {
-    id: "comm-015", familyId: "fam-003", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
+    id: "comm-015", scope: "family", orderId: null, familyId: "fam-003", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-10-28T09:45:00.000Z",
     fromName: "Michael Torres — Account Manager", fromEmail: "m.torres@orderco.com",
     toName: "Maria Santos", toEmail: "m.santos@telecorpsystems.com",
@@ -476,7 +476,7 @@ Michael`,
 
   // ── fam-004: Cloud Connect Suite (TeleCorp) ─────────────────────────────────────────────
   {
-    id: "comm-016", familyId: "fam-004", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
+    id: "comm-016", scope: "family", orderId: null, familyId: "fam-004", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-10-05T14:00:00.000Z",
     fromName: "Michael Torres — Account Manager", fromEmail: "m.torres@orderco.com",
     toName: "Maria Santos", toEmail: "m.santos@telecorpsystems.com",
@@ -505,7 +505,7 @@ Best,
 Michael`,
   },
   {
-    id: "comm-017", familyId: "fam-004", customerId: "cust-002", direction: "outbound", isAiGenerated: true,
+    id: "comm-017", scope: "family", orderId: null, familyId: "fam-004", customerId: "cust-002", direction: "outbound", isAiGenerated: true,
     sentAt: "2024-10-18T10:00:00.000Z",
     fromName: "Michael Torres — Account Manager", fromEmail: "m.torres@orderco.com",
     toName: "Maria Santos", toEmail: "m.santos@telecorpsystems.com",
@@ -546,7 +546,7 @@ Account Management Team
 Enterprise Services Division`,
   },
   {
-    id: "comm-018", familyId: "fam-004", customerId: "cust-002", direction: "inbound", isAiGenerated: false,
+    id: "comm-018", scope: "family", orderId: null, familyId: "fam-004", customerId: "cust-002", direction: "inbound", isAiGenerated: false,
     sentAt: "2024-10-26T16:00:00.000Z",
     fromName: "Maria Santos", fromEmail: "m.santos@telecorpsystems.com",
     toName: "Michael Torres", toEmail: "m.torres@orderco.com",
@@ -563,7 +563,7 @@ Thanks,
 Maria`,
   },
   {
-    id: "comm-019", familyId: "fam-004", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
+    id: "comm-019", scope: "family", orderId: null, familyId: "fam-004", customerId: "cust-002", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-11-01T09:30:00.000Z",
     fromName: "Michael Torres — Account Manager", fromEmail: "m.torres@orderco.com",
     toName: "Maria Santos", toEmail: "m.santos@telecorpsystems.com",
@@ -589,7 +589,7 @@ Michael`,
 
   // ── fam-005: Midwest Core Network (Vertex) ──────────────────────────────────────────────
   {
-    id: "comm-020", familyId: "fam-005", customerId: "cust-004", direction: "outbound", isAiGenerated: false,
+    id: "comm-020", scope: "family", orderId: null, familyId: "fam-005", customerId: "cust-004", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-10-08T09:00:00.000Z",
     fromName: "David Okafor — Account Manager", fromEmail: "d.okafor@orderco.com",
     toName: "Robert Chen", toEmail: "r.chen@vertextelecom.com",
@@ -617,7 +617,7 @@ David Okafor
 Senior Account Manager`,
   },
   {
-    id: "comm-021", familyId: "fam-005", customerId: "cust-004", direction: "inbound", isAiGenerated: false,
+    id: "comm-021", scope: "family", orderId: null, familyId: "fam-005", customerId: "cust-004", direction: "inbound", isAiGenerated: false,
     sentAt: "2024-10-17T14:30:00.000Z",
     fromName: "Robert Chen", fromEmail: "r.chen@vertextelecom.com",
     toName: "David Okafor", toEmail: "d.okafor@orderco.com",
@@ -642,7 +642,7 @@ Robert Chen
 CTO, Vertex Telecom Group`,
   },
   {
-    id: "comm-022", familyId: "fam-005", customerId: "cust-004", direction: "outbound", isAiGenerated: false,
+    id: "comm-022", scope: "family", orderId: null, familyId: "fam-005", customerId: "cust-004", direction: "outbound", isAiGenerated: false,
     sentAt: "2024-10-25T10:00:00.000Z",
     fromName: "David Okafor — Account Manager", fromEmail: "d.okafor@orderco.com",
     toName: "Robert Chen", toEmail: "r.chen@vertextelecom.com",
@@ -665,7 +665,7 @@ Best,
 David`,
   },
   {
-    id: "comm-023", familyId: "fam-005", customerId: "cust-004", direction: "outbound", isAiGenerated: true,
+    id: "comm-023", scope: "family", orderId: null, familyId: "fam-005", customerId: "cust-004", direction: "outbound", isAiGenerated: true,
     sentAt: "2024-11-01T11:00:00.000Z",
     fromName: "David Okafor — Account Manager", fromEmail: "d.okafor@orderco.com",
     toName: "Robert Chen", toEmail: "r.chen@vertextelecom.com",
@@ -716,5 +716,217 @@ Warm regards,
 David Okafor
 Account Management Team
 Enterprise Services Division`,
+  },
+
+  // ── Customer-scope comms ─────────────────────────────────────────────────────────────────
+  {
+    id: "comm-024", scope: "customer", orderId: null, familyId: null, customerId: "cust-001", direction: "outbound", isAiGenerated: false,
+    sentAt: "2024-09-30T09:00:00.000Z",
+    fromName: "Sarah Chen — Account Manager", fromEmail: "s.chen@orderco.com",
+    toName: "James Whitfield", toEmail: "j.whitfield@acmecommunications.com",
+    subject: "Q4 Account Review — Acme Communications Inc.",
+    body: `Hi James,
+
+As we head into Q4, I wanted to reach out with a consolidated overview of your account and kick off our quarterly review process.
+
+CURRENT ACCOUNT STANDING
+  Account Number: ACM-10042
+  Industry:       Media & Broadcasting
+  Active Orders:  6 (across 2 order families + 1 standalone)
+  Monthly Committed Value: $37,700
+
+ORDER FAMILIES IN PROGRESS
+  1. NY Metro Infrastructure (3 orders, $21,400/mo)
+     Focus: DIA, MPLS VPN, and Metro Ethernet across your New York footprint
+  2. National Voice Platform (2 orders, $12,700/mo)
+     Focus: SIP Trunking and Unified Communications Suite
+
+STANDALONE
+  • SD-WAN Managed Service — Miami, FL ($3,600/mo) — Active & Billing
+
+UPCOMING MILESTONES
+  • DIA implementation at 1221 Avenue of the Americas (targeting end of October)
+  • National Voice Platform UC Suite finalization — pending addendum signature
+  • SIP Trunking number porting — Chicago cutover deadline November 15th
+
+I'd love to schedule a 30-minute review call to walk through everything and discuss any expansion plans for 2025. Would any time the week of October 14th work for you?
+
+Best,
+Sarah Chen
+Enterprise Account Manager`,
+  },
+  {
+    id: "comm-025", scope: "customer", orderId: null, familyId: null, customerId: "cust-001", direction: "inbound", isAiGenerated: false,
+    sentAt: "2024-10-03T11:20:00.000Z",
+    fromName: "James Whitfield", fromEmail: "j.whitfield@acmecommunications.com",
+    toName: "Sarah Chen", toEmail: "s.chen@orderco.com",
+    subject: "Re: Q4 Account Review — Expansion Discussion",
+    body: `Sarah,
+
+Great timing on this. Happy to do a Q4 review — October 16th at 2pm ET works for me.
+
+Also, I wanted to flag something ahead of our call: we're likely going to need Dark Fiber capacity between our New York and Philadelphia broadcast facilities by mid-2025. This is for a new distribution partnership we're finalizing. I'd like to get a preliminary quote and feasibility assessment on the agenda.
+
+Additionally, our CTO is asking about colocation options in the New York metro area. We currently have nothing in colo, but with the DIA and Metro Ethernet coming online, it makes sense to evaluate a rack or two near our main interconnect.
+
+Can you add both of those to the agenda for October 16th?
+
+Thanks,
+James`,
+  },
+  {
+    id: "comm-026", scope: "customer", orderId: null, familyId: null, customerId: "cust-002", direction: "outbound", isAiGenerated: false,
+    sentAt: "2024-09-05T10:00:00.000Z",
+    fromName: "Michael Torres — Account Manager", fromEmail: "m.torres@orderco.com",
+    toName: "Maria Santos", toEmail: "m.santos@telecorpsystems.com",
+    subject: "Welcome — TeleCorp Systems Account Overview",
+    body: `Hi Maria,
+
+Following our introduction last month, I wanted to send a formal account overview as I take on your account management responsibilities from Tom Reeves.
+
+ACCOUNT PROFILE
+  Account Number: TCS-20187
+  Industry:       Financial Services
+
+ACTIVE SERVICES
+  Existing:
+  • Colocation (Quarter Rack) at 3 World Trade Center — Billing since September 2024
+
+  In Flight (7 orders across 2 families):
+  • Financial Services Network — Private Line, MPLS VPN, Colocation
+  • Cloud Connect Suite — AWS Direct Connect, SD-WAN
+
+I'm committed to providing you with clear, proactive communication on all your orders. Please don't hesitate to contact me directly any time.
+
+Best,
+Michael Torres
+Senior Account Manager`,
+  },
+
+  // ── Order-scope comms ────────────────────────────────────────────────────────────────────
+  {
+    id: "comm-027", scope: "order", orderId: "ord-001", familyId: "fam-001", customerId: "cust-001", direction: "outbound", isAiGenerated: false,
+    sentAt: "2024-10-29T14:00:00.000Z",
+    fromName: "Marcus Webb — Field Engineer", fromEmail: "m.webb@orderco.com",
+    toName: "James Whitfield", toEmail: "j.whitfield@acmecommunications.com",
+    subject: "ORD-2024-10042 — DIA On-Site Update: Day 1 Complete",
+    body: `Hi James,
+
+Quick field update on your Dedicated Internet Access (DIA) order at 1221 Avenue of the Americas.
+
+ORDER: ORD-2024-10042
+SERVICE: Dedicated Internet Access (DIA)
+LOCATION: 1221 Avenue of the Americas, New York, NY 10020
+
+DAY 1 SUMMARY (October 29th)
+Our crew completed the following today:
+  ✓ Structured cabling from the DMARC to your IDF on floor 32
+  ✓ CPE (Cisco ASR 1001-X) racked and powered in comms room 32-B
+  ✓ Initial WAN interface configuration loaded
+  ✓ Fiber tested from street entry point to DMARC — signal levels clean
+
+TOMORROW (October 30th)
+  • BGP session establishment with our backbone
+  • End-to-end throughput testing (1Gbps committed, 10Gbps burst)
+  • Customer handoff testing — I'll coordinate with your IT team directly
+
+Please have your IT director available between 10am–12pm for the handoff test.
+
+Marcus Webb
+Senior Field Engineer`,
+  },
+  {
+    id: "comm-028", scope: "order", orderId: "ord-001", familyId: "fam-001", customerId: "cust-001", direction: "inbound", isAiGenerated: false,
+    sentAt: "2024-10-30T08:15:00.000Z",
+    fromName: "James Whitfield", fromEmail: "j.whitfield@acmecommunications.com",
+    toName: "Marcus Webb", toEmail: "m.webb@orderco.com",
+    subject: "Re: ORD-2024-10042 — DIA: Ready for Handoff Test",
+    body: `Marcus,
+
+Good to hear things went smoothly on Day 1. Our IT director, Kevin Park, will be available from 10am as requested.
+
+One question: will the BGP peer IP and ASN details be provided in the handoff documentation, or do we need to pre-configure anything on our core router before the test?
+
+Also, can you confirm the committed information rate (CIR) being tested? The order is for 1Gbps committed — I just want Kevin to have that in front of him.
+
+Thanks,
+James`,
+  },
+  {
+    id: "comm-029", scope: "order", orderId: "ord-019", familyId: "fam-005", customerId: "cust-004", direction: "outbound", isAiGenerated: false,
+    sentAt: "2024-10-14T09:30:00.000Z",
+    fromName: "Elena Vasquez — Fiber Projects", fromEmail: "e.vasquez@orderco.com",
+    toName: "Robert Chen", toEmail: "r.chen@vertextelecom.com",
+    subject: "ORD-2024-40231 — Dark Fiber IRU: Route Survey Logistics",
+    body: `Hi Robert,
+
+I'm the lead surveyor assigned to your Dark Fiber IRU project (ORD-2024-40231). David Okafor asked me to reach out directly regarding the November 14–15th route survey.
+
+SURVEY SCOPE
+  Day 1 (Nov 14): Detroit origin to Toledo interchange — ~94 route miles
+  Day 2 (Nov 15): Toledo to Cleveland terminus — ~93 route miles
+
+YOUR REPRESENTATIVE
+  • Meeting point: 500 Woodward Ave, Detroit lobby — 7:30 AM both days
+  • Hard hat and hi-vis vest required (we can provide)
+  • Estimated daily duration: 9–10 hours including driving
+
+Please confirm your representative's name and contact number by November 8th for site access manifests.
+
+Elena Vasquez
+Senior Fiber Survey Engineer`,
+  },
+  {
+    id: "comm-030", scope: "order", orderId: "ord-019", familyId: "fam-005", customerId: "cust-004", direction: "inbound", isAiGenerated: false,
+    sentAt: "2024-10-15T16:00:00.000Z",
+    fromName: "Robert Chen", fromEmail: "r.chen@vertextelecom.com",
+    toName: "Elena Vasquez", toEmail: "e.vasquez@orderco.com",
+    subject: "Re: ORD-2024-40231 — Survey Confirmed, Rep Details",
+    body: `Elena,
+
+Our representative will be:
+  Name:   Thomas Osei, P.E.
+  Title:  Director of Network Infrastructure
+  Mobile: +1 313-555-0287
+
+Thomas is a licensed PE and has participated in several IRU surveys. He's confirmed for both days.
+
+One request: could you share the OTDR test plan ahead of time? Thomas would like to review it against our dispersion modeling assumptions for the 100G coherent optics we're planning to deploy over this IRU.
+
+Also please send GIS coordinates for the Day 1 and Day 2 start/end points so he can pre-load them.
+
+Robert`,
+  },
+  {
+    id: "comm-031", scope: "order", orderId: "ord-009", familyId: "fam-004", customerId: "cust-002", direction: "outbound", isAiGenerated: true,
+    sentAt: "2024-10-28T10:00:00.000Z",
+    fromName: "Michael Torres — Account Manager", fromEmail: "m.torres@orderco.com",
+    toName: "Maria Santos", toEmail: "m.santos@telecorpsystems.com",
+    subject: "Status Update — ORD-2024-20189: Cloud Connect (AWS Direct Connect)",
+    body: `Dear TeleCorp Systems Team,
+
+This message provides a focused status update on a single service order.
+
+ORDER DETAILS
+  Order Number: ORD-2024-20189
+  Product:      Cloud Connect (AWS Direct Connect)
+  Location:     101 California St, San Francisco, CA 94111
+  Value:        $14,000/mo
+  Submitted:    October 30, 2024
+  Current Status: Awaiting Finalization
+
+STATUS UPDATE
+Your AWS Direct Connect order is progressing well. Our hosted Virtual Interface (VIF) has been provisioned on our side and is awaiting BGP configuration details from your cloud infrastructure team.
+
+WHAT WE NEED FROM YOU
+  1. BGP Autonomous System Number (ASN)
+  2. VLAN tag for the VIF
+  3. VIF interface IP addresses (customer-side and provider-side)
+
+Once received, final provisioning and testing is estimated at 3–5 business days.
+
+Warm regards,
+Michael Torres
+Account Management Team`,
   },
 ];

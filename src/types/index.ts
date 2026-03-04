@@ -45,10 +45,14 @@ export const FAMILY_COLORS = [
 
 export type FamilyColor = typeof FAMILY_COLORS[number]["value"];
 
+export type CommScope = "customer" | "family" | "order";
+
 export interface Communication {
   id: string;
-  familyId: string;
+  scope: CommScope;
   customerId: string;
+  familyId: string | null;  // null for customer-scope or unassigned-order comms
+  orderId: string | null;   // set only for order-scope comms
   subject: string;
   body: string;
   sentAt: string; // ISO date string

@@ -3,7 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import { useStore } from "@/store/useStore";
 import { FAMILY_COLORS } from "@/types";
-import type { Communication, Customer, Order, OrderFamily } from "@/types";
+import type { Communication, Customer, Order, OrderFamily, CommScope } from "@/types";
+
+// ─── Context union ────────────────────────────────────────────────────────────
+
+type SelectedCtx =
+  | { scope: "customer"; customerId: string }
+  | { scope: "family";   customerId: string; familyId: string }
+  | { scope: "order";    customerId: string; familyId: string | null; orderId: string };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -15,31 +22,89 @@ function formatDate(iso: string): string {
 }
 
 function formatShortDate(iso: string): string {
-  const d = new Date(iso);
+  const d   = new Date(iso);
   const now = new Date();
   const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return d.toLocaleDateString("en-US", { weekday: "short" });
+  if (diffDays < 7)  return d.toLocaleDateString("en-US", { weekday: "short" });
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// ─── AI email generator ───────────────────────────────────────────────────────
+function commsFor(communications: Communication[], ctx: SelectedCtx): Communication[] {
+  return communications
+    .filter(c => {
+      if (ctx.scope === "customer") return c.customerId === ctx.customerId && c.scope === "customer";
+      if (ctx.scope === "family")   return c.familyId === ctx.familyId    && c.scope === "family";
+      if (ctx.scope === "order")    return c.orderId  === ctx.orderId     && c.scope === "order";
+      return false;
+    })
+    .sort((a, b) => a.sentAt.localeCompare(b.sentAt));
+}
 
-function generateStatusEmail(
-  customer: Customer,
-  family: OrderFamily,
-  familyOrders: Order[],
-): { subject: string; body: string } {
-  const totalValue = familyOrders.reduce((s, o) => s + o.value, 0);
+function lastComm(communications: Communication[], ctx: SelectedCtx): Communication | undefined {
+  return [...commsFor(communications, ctx)].sort((a, b) => b.sentAt.localeCompare(a.sentAt))[0];
+}
+
+// ─── AI generators ────────────────────────────────────────────────────────────
+
+function generateCustomerEmail(customer: Customer, families: OrderFamily[], orders: Order[]) {
+  const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const custOrders  = orders.filter(o => o.customerId === customer.id);
+  const custFamilies = families.filter(f => f.customerId === customer.id);
+  const totalValue  = custOrders.reduce((s, o) => s + o.value, 0);
+
   const statusLabels: Record<string, string> = {
-    confirm:   "Pending Confirmation",
-    implement: "In Implementation",
-    finalize:  "Awaiting Finalization",
-    activate:  "Ready for Activation",
-    billing:   "Active & Billing",
+    confirm: "Pending Confirmation", implement: "In Implementation",
+    finalize: "Awaiting Finalization", activate: "Ready for Activation", billing: "Active & Billing",
   };
 
+  let body = `Dear ${customer.name} Team,\n\n`;
+  body += `I hope this message finds you well. Please find below a consolidated account update as of ${today}.\n\n`;
+  body += `ACCOUNT OVERVIEW\n`;
+  body += `  Account:      ${customer.accountNumber}\n`;
+  body += `  Total Orders: ${custOrders.length}\n`;
+  body += `  Monthly Value: $${totalValue.toLocaleString()}\n\n`;
+
+  if (custFamilies.length > 0) {
+    body += `━━━ ORDER FAMILIES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    for (const f of custFamilies) {
+      const fOrders = orders.filter(o => o.familyId === f.id);
+      const fValue  = fOrders.reduce((s, o) => s + o.value, 0);
+      body += `${f.name} (${fOrders.length} orders · $${fValue.toLocaleString()}/mo)\n`;
+      for (const o of fOrders) {
+        body += `  • ${o.orderNumber} — ${o.product}\n`;
+        body += `    Status: ${statusLabels[o.status] ?? o.status}\n`;
+      }
+      body += "\n";
+    }
+  }
+
+  const standalone = custOrders.filter(o => !o.familyId);
+  if (standalone.length > 0) {
+    body += `━━━ STANDALONE ORDERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    for (const o of standalone) {
+      body += `  • ${o.orderNumber} — ${o.product}\n`;
+      body += `    Status: ${statusLabels[o.status] ?? o.status} · $${o.value.toLocaleString()}/mo\n`;
+    }
+    body += "\n";
+  }
+
+  body += `Please don't hesitate to reach out with any questions.\n\n`;
+  body += `Warm regards,\nAccount Management Team\nEnterprise Services Division`;
+
+  return {
+    subject: `Account Update — ${customer.name} (${custOrders.length} Active Orders)`,
+    body,
+  };
+}
+
+function generateFamilyEmail(customer: Customer, family: OrderFamily, familyOrders: Order[]) {
+  const totalValue = familyOrders.reduce((s, o) => s + o.value, 0);
+  const statusLabels: Record<string, string> = {
+    confirm: "Pending Confirmation", implement: "In Implementation",
+    finalize: "Awaiting Finalization", activate: "Ready for Activation", billing: "Active & Billing",
+  };
   const byStatus = {
     billing:   familyOrders.filter(o => o.status === "billing"),
     activate:  familyOrders.filter(o => o.status === "activate"),
@@ -47,63 +112,87 @@ function generateStatusEmail(
     finalize:  familyOrders.filter(o => o.status === "finalize"),
     confirm:   familyOrders.filter(o => o.status === "confirm"),
   };
-
   const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-  const subject = `Status Update — ${family.name} (${familyOrders.length} Order${familyOrders.length !== 1 ? "s" : ""})`;
 
   let body = `Dear ${customer.name} Team,\n\n`;
   body += `I hope this message finds you well. I'm writing to provide you with a comprehensive status update on your "${family.name}" order family as of ${today}.\n\n`;
   body += `This family currently encompasses ${familyOrders.length} service order${familyOrders.length !== 1 ? "s" : ""} with a combined contracted value of $${totalValue.toLocaleString()}.\n\n`;
   body += `━━━ ORDER STATUS SUMMARY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  for (const order of familyOrders) {
-    body += `${order.orderNumber} | ${order.product}\n`;
-    body += `   Status:   ${statusLabels[order.status] ?? order.status}\n`;
-    body += `   Location: ${order.address}\n`;
-    body += `   Value:    $${order.value.toLocaleString()}/mo\n\n`;
+  for (const o of familyOrders) {
+    body += `${o.orderNumber} | ${o.product}\n`;
+    body += `   Status:   ${statusLabels[o.status] ?? o.status}\n`;
+    body += `   Location: ${o.address}\n`;
+    body += `   Value:    $${o.value.toLocaleString()}/mo\n\n`;
   }
 
   body += `━━━ PROGRESS HIGHLIGHTS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-  if (byStatus.billing.length > 0) {
-    body += `✓  ACTIVE & BILLING (${byStatus.billing.length})\n`;
-    body += byStatus.billing.map(o => `   • ${o.product} — Fully operational`).join("\n") + "\n\n";
-  }
-  if (byStatus.activate.length > 0) {
-    body += `◎  ACTIVATION READY (${byStatus.activate.length})\n`;
-    body += byStatus.activate.map(o => `   • ${o.product} — Circuits tested and confirmed, scheduled for activation`).join("\n") + "\n\n";
-  }
-  if (byStatus.implement.length > 0) {
-    body += `⟳  IMPLEMENTATION IN PROGRESS (${byStatus.implement.length})\n`;
-    body += byStatus.implement.map(o => `   • ${o.product} — Field teams engaged, installation on schedule`).join("\n") + "\n\n";
-  }
-  if (byStatus.finalize.length > 0) {
-    body += `◈  PENDING FINALIZATION (${byStatus.finalize.length})\n`;
-    body += byStatus.finalize.map(o => `   • ${o.product} — Awaiting final documentation sign-off`).join("\n") + "\n\n";
-  }
-  if (byStatus.confirm.length > 0) {
-    body += `◻  AWAITING CONFIRMATION (${byStatus.confirm.length})\n`;
-    body += byStatus.confirm.map(o => `   • ${o.product} — Order submitted, pending internal confirmation`).join("\n") + "\n\n";
-  }
-
-  body += `━━━ NEXT STEPS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  if (byStatus.billing.length > 0)   body += `✓  ACTIVE & BILLING (${byStatus.billing.length})\n` + byStatus.billing.map(o => `   • ${o.product} — Fully operational`).join("\n") + "\n\n";
+  if (byStatus.activate.length > 0)  body += `◎  ACTIVATION READY (${byStatus.activate.length})\n` + byStatus.activate.map(o => `   • ${o.product} — Circuits tested, scheduled for activation`).join("\n") + "\n\n";
+  if (byStatus.implement.length > 0) body += `⟳  IN IMPLEMENTATION (${byStatus.implement.length})\n` + byStatus.implement.map(o => `   • ${o.product} — Field teams engaged, on schedule`).join("\n") + "\n\n";
+  if (byStatus.finalize.length > 0)  body += `◈  PENDING FINALIZATION (${byStatus.finalize.length})\n` + byStatus.finalize.map(o => `   • ${o.product} — Awaiting final sign-off`).join("\n") + "\n\n";
+  if (byStatus.confirm.length > 0)   body += `◻  AWAITING CONFIRMATION (${byStatus.confirm.length})\n` + byStatus.confirm.map(o => `   • ${o.product} — Submitted, pending confirmation`).join("\n") + "\n\n";
 
   const hasInFlight = byStatus.implement.length + byStatus.confirm.length > 0;
   const hasNearDone = byStatus.activate.length + byStatus.finalize.length > 0;
 
-  if (hasInFlight) {
-    body += `Our implementation and provisioning teams are actively progressing the above orders. You can expect your next update within 5–7 business days, or sooner if there are significant status changes.\n\n`;
-  } else if (hasNearDone) {
-    body += `We are in the final stages of bringing these services live. Your account team will reach out shortly to coordinate activation windows and any required on-site access.\n\n`;
-  } else {
-    body += `All services in this order family are now active and billing. Please review your next invoice for these services and contact us with any questions.\n\n`;
-  }
+  body += `━━━ NEXT STEPS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  if (hasInFlight)      body += `Our teams are actively progressing these orders. Expect your next update within 5–7 business days.\n\n`;
+  else if (hasNearDone) body += `We are in the final stages of bringing these services live. Your team will be contacted to coordinate activation.\n\n`;
+  else                  body += `All services in this family are now active and billing.\n\n`;
 
-  body += `Should you have any questions or require clarification on any aspect of this update, please don't hesitate to reach out directly to your account manager or reply to this message.\n\n`;
-  body += `We appreciate your continued partnership and look forward to delivering the full "${family.name}" portfolio.\n\n`;
+  body += `Should you have any questions, please don't hesitate to reach out.\n\n`;
   body += `Warm regards,\nAccount Management Team\nEnterprise Services Division`;
 
-  return { subject, body };
+  return {
+    subject: `Status Update — ${family.name} (${familyOrders.length} Order${familyOrders.length !== 1 ? "s" : ""})`,
+    body,
+  };
+}
+
+function generateOrderEmail(customer: Customer, order: Order) {
+  const statusLabels: Record<string, string> = {
+    confirm: "Pending Confirmation", implement: "In Implementation",
+    finalize: "Awaiting Finalization", activate: "Ready for Activation", billing: "Active & Billing",
+  };
+  const statusDetails: Record<string, string> = {
+    confirm:   "Your order has been submitted and is currently pending internal confirmation. Our provisioning team is reviewing the order details and circuit path availability. You can expect a confirmation within 3–5 business days.",
+    implement: "Your order is actively in implementation. Our field and provisioning teams are working to bring this service live. We will notify you promptly once testing is complete and the service is ready for handoff.",
+    finalize:  "Your order is in the finalization stage. We are completing final documentation, configuration review, and internal sign-offs before implementation begins. Please ensure any outstanding items on your side are completed promptly to avoid delays.",
+    activate:  "Your service is ready for activation. All circuits have been tested and confirmed. Our team will coordinate with you directly to schedule the activation window at a time that minimizes disruption to your operations.",
+    billing:   "Your service is fully operational and billing. If you have any questions about your invoice or service performance, please don't hesitate to reach out.",
+  };
+  const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
+  const body = `Dear ${customer.name} Team,
+
+This message provides a focused status update on a single service order as of ${today}.
+
+━━━ ORDER DETAILS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Order Number:   ${order.orderNumber}
+  Product:        ${order.product}
+  Location:       ${order.address}
+  Monthly Value:  $${order.value.toLocaleString()}/mo
+  Submitted:      ${order.submittedDate}
+  Current Status: ${statusLabels[order.status] ?? order.status}
+
+━━━ STATUS UPDATE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${statusDetails[order.status] ?? "Your order is progressing as expected."}
+
+━━━ NEXT STEPS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+We will continue to keep you informed of any changes to this order's status. If you have specific questions or requirements related to this service, please reply to this message or contact your account manager directly.
+
+Warm regards,
+Account Management Team
+Enterprise Services Division`;
+
+  return {
+    subject: `Status Update — ${order.orderNumber}: ${order.product}`,
+    body,
+  };
 }
 
 // ─── Email card ───────────────────────────────────────────────────────────────
@@ -114,37 +203,33 @@ function EmailCard({ comm }: { comm: Communication }) {
 
   return (
     <div className={`rounded-xl border shadow-sm overflow-hidden ${isOut ? "bg-white border-slate-200" : "bg-slate-50 border-slate-200"}`}>
-      {/* Header */}
       <button
         onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50/80 transition-colors"
       >
-        {/* Avatar */}
         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5
           ${isOut ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"}`}>
           {comm.fromName.charAt(0).toUpperCase()}
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-slate-800 truncate">{comm.fromName}</span>
             {comm.isAiGenerated && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-700 flex-shrink-0">
-                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2L9.5 8.5 3 11l6.5 2.5L12 20l2.5-6.5L21 11l-6.5-2.5z"/>
-                </svg>
-                AI Generated
+                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L9.5 8.5 3 11l6.5 2.5L12 20l2.5-6.5L21 11l-6.5-2.5z"/></svg>
+                AI
               </span>
             )}
             <span className={`text-xs flex-shrink-0 ${isOut ? "text-blue-500" : "text-slate-400"}`}>
-              {isOut ? "↑ Outbound" : "↓ Inbound"}
+              {isOut ? "↑ Sent" : "↓ Received"}
             </span>
             <span className="text-xs text-slate-400 ml-auto flex-shrink-0">{formatDate(comm.sentAt)}</span>
           </div>
           <div className="text-sm font-medium text-slate-700 mt-0.5 truncate">{comm.subject}</div>
           {!expanded && (
             <div className="text-xs text-slate-400 truncate mt-0.5">
-              {comm.body.split("\n").filter(l => l.trim()).slice(0, 1).join(" ")}
+              {comm.body.split("\n").find(l => l.trim()) ?? ""}
             </div>
           )}
         </div>
@@ -155,7 +240,6 @@ function EmailCard({ comm }: { comm: Communication }) {
         </svg>
       </button>
 
-      {/* Body */}
       {expanded && (
         <div className="px-4 pb-4 pt-1 border-t border-slate-100">
           <div className="text-xs text-slate-400 mb-2">
@@ -170,153 +254,267 @@ function EmailCard({ comm }: { comm: Communication }) {
   );
 }
 
+// ─── Left panel tree ──────────────────────────────────────────────────────────
+
+const SCOPE_LABEL: Record<CommScope, string> = {
+  customer: "Account",
+  family:   "Family",
+  order:    "Order",
+};
+
+function TreeNode({
+  label, sublabel, dot, indent, selected, unreadDot, commCount, lastSentAt, onClick, children,
+}: {
+  label: string; sublabel?: string; dot?: string; indent: number; selected: boolean;
+  unreadDot?: boolean; commCount: number; lastSentAt?: string;
+  onClick: () => void; children?: React.ReactNode;
+}) {
+  return (
+    <div>
+      <button
+        onClick={onClick}
+        className={`w-full flex items-center gap-2 text-left transition-colors
+          ${selected ? "bg-blue-50 border-r-2 border-blue-500" : "hover:bg-slate-50"}
+          ${indent === 0 ? "py-2.5 px-4" : indent === 1 ? "py-2 pl-7 pr-3" : "py-1.5 pl-10 pr-3"}`}
+      >
+        {dot && <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />}
+        <div className="flex-1 min-w-0">
+          <div className={`truncate ${indent === 0 ? "text-sm font-medium text-slate-800" : indent === 1 ? "text-xs font-medium text-slate-700" : "text-xs text-slate-600"} ${selected ? (indent === 0 ? "text-blue-800" : "text-blue-700") : ""}`}>
+            {label}
+          </div>
+          {sublabel && (
+            <div className="text-xs text-slate-400 truncate">{sublabel}</div>
+          )}
+          {lastSentAt && commCount > 0 && (
+            <div className="text-xs text-slate-400">
+              {formatShortDate(lastSentAt)} · {commCount} msg{commCount !== 1 ? "s" : ""}
+            </div>
+          )}
+          {commCount === 0 && (
+            <div className="text-xs text-slate-300">No messages</div>
+          )}
+        </div>
+        {unreadDot && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
+      </button>
+      {children}
+    </div>
+  );
+}
+
+// ─── Scope badge ──────────────────────────────────────────────────────────────
+
+function ScopeBadge({ scope }: { scope: CommScope }) {
+  const styles: Record<CommScope, string> = {
+    customer: "bg-slate-100 text-slate-600",
+    family:   "bg-blue-100 text-blue-700",
+    order:    "bg-amber-100 text-amber-700",
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${styles[scope]}`}>
+      {SCOPE_LABEL[scope]}
+    </span>
+  );
+}
+
 // ─── Main view ────────────────────────────────────────────────────────────────
 
 export function CommsView() {
   const { customers, orders, families, communications, sendCommunication } = useStore();
 
-  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
-  const [expandedCustomerIds, setExpandedCustomerIds] = useState<Set<string>>(
-    () => new Set(families.map(f => f.customerId)) // start all expanded
+  const [ctx, setCtx]                   = useState<SelectedCtx | null>(null);
+  const [expandedCustIds, setExpandedCustIds] = useState<Set<string>>(
+    () => new Set(customers.map(c => c.id))
   );
-  const [subject, setSubject]     = useState("");
-  const [body, setBody]           = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [sending, setSending]     = useState(false);
+  const [expandedFamIds, setExpandedFamIds]   = useState<Set<string>>(new Set());
+  const [subject, setSubject]           = useState("");
+  const [body, setBody]                 = useState("");
+  const [generating, setGenerating]     = useState(false);
+  const [sending, setSending]           = useState(false);
 
   const threadEndRef = useRef<HTMLDivElement>(null);
 
-  const selectedFamily   = families.find(f => f.id === selectedFamilyId);
-  const selectedCustomer = selectedFamily ? customers.find(c => c.id === selectedFamily.customerId) : null;
-  const familyOrders     = orders.filter(o => o.familyId === selectedFamilyId);
-  const familyComms      = communications
-    .filter(c => c.familyId === selectedFamilyId)
-    .sort((a, b) => a.sentAt.localeCompare(b.sentAt));
+  const threadComms = ctx ? commsFor(communications, ctx) : [];
 
-  // Scroll to bottom of thread when switching families or new message arrives
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [selectedFamilyId, familyComms.length]);
+  }, [ctx, threadComms.length]);
 
-  // Customers that own at least one family
-  const customersWithFamilies = customers.filter(c => families.some(f => f.customerId === c.id));
+  // Derived context objects
+  const ctxCustomer = ctx ? customers.find(c => c.id === ctx.customerId) : null;
+  const ctxFamily   = ctx?.scope !== "customer" && ctx?.familyId
+    ? families.find(f => f.id === ctx.familyId) : null;
+  const ctxOrder    = ctx?.scope === "order"
+    ? orders.find(o => o.id === ctx.orderId) : null;
+  const ctxFamilyOrders = ctxFamily ? orders.filter(o => o.familyId === ctxFamily.id) : [];
+  const colorConfig = ctxFamily ? FAMILY_COLORS.find(c => c.value === ctxFamily.color) : null;
 
-  const toggleCustomer = (id: string) => {
-    setExpandedCustomerIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
+  const toggleCust = (id: string) => setExpandedCustIds(prev => {
+    const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next;
+  });
+  const toggleFam = (id: string) => setExpandedFamIds(prev => {
+    const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next;
+  });
 
   const handleGenerateAI = async () => {
-    if (!selectedFamily || !selectedCustomer) return;
+    if (!ctx || !ctxCustomer) return;
     setGenerating(true);
     await new Promise(r => setTimeout(r, 1400));
-    const result = generateStatusEmail(selectedCustomer, selectedFamily, familyOrders);
+    let result: { subject: string; body: string };
+    if (ctx.scope === "customer")      result = generateCustomerEmail(ctxCustomer, families.filter(f => f.customerId === ctx.customerId), orders);
+    else if (ctx.scope === "family" && ctxFamily) result = generateFamilyEmail(ctxCustomer, ctxFamily, ctxFamilyOrders);
+    else if (ctx.scope === "order"  && ctxOrder)  result = generateOrderEmail(ctxCustomer, ctxOrder);
+    else result = { subject: "", body: "" };
     setSubject(result.subject);
     setBody(result.body);
     setGenerating(false);
   };
 
   const handleSend = async () => {
-    if (!selectedFamilyId || !selectedCustomer || !selectedFamily || !subject.trim() || !body.trim()) return;
+    if (!ctx || !ctxCustomer || !subject.trim() || !body.trim()) return;
     setSending(true);
     await new Promise(r => setTimeout(r, 700));
+    const toEmail = `accounts@${ctxCustomer.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`;
     sendCommunication({
-      familyId:    selectedFamilyId,
-      customerId:  selectedFamily.customerId,
-      subject:     subject.trim(),
-      body:        body.trim(),
-      sentAt:      new Date().toISOString(),
-      fromName:    "Account Management Team",
-      fromEmail:   "accounts@orderco.com",
-      toName:      selectedCustomer.name,
-      toEmail:     `accounts@${selectedCustomer.name.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
-      direction:   "outbound",
+      scope:     ctx.scope,
+      customerId: ctx.customerId,
+      familyId:  ctx.scope !== "customer" ? (ctx.familyId ?? null) : null,
+      orderId:   ctx.scope === "order" ? ctx.orderId : null,
+      subject:   subject.trim(),
+      body:      body.trim(),
+      sentAt:    new Date().toISOString(),
+      fromName:  "Account Management Team",
+      fromEmail: "accounts@orderco.com",
+      toName:    ctxCustomer.name,
+      toEmail,
+      direction: "outbound",
       isAiGenerated: false,
     });
-    setSubject("");
-    setBody("");
-    setSending(false);
+    setSubject(""); setBody(""); setSending(false);
   };
 
-  const colorConfig = selectedFamily ? FAMILY_COLORS.find(c => c.value === selectedFamily.color) : null;
+  // ── Header breadcrumb ──────────────────────────────────────────────────────
+  const headerParts: string[] = [];
+  if (ctxCustomer) headerParts.push(ctxCustomer.name);
+  if (ctxFamily)   headerParts.push(ctxFamily.name);
+  if (ctxOrder)    headerParts.push(ctxOrder.orderNumber);
+
+  // ── Customer list for left panel (all customers, not just those with families) ──
+  const allCustomers = customers;
 
   return (
     <div className="flex flex-1 overflow-hidden">
 
-      {/* ── Left panel: customer / family list ───────────────────────────── */}
+      {/* ── Left panel ───────────────────────────────────────────────────── */}
       <div className="w-72 border-r border-slate-200 bg-white flex flex-col overflow-hidden flex-shrink-0">
-        <div className="px-4 py-3 border-b border-slate-200">
+        <div className="px-4 py-3 border-b border-slate-200 flex-shrink-0">
           <h2 className="text-sm font-semibold text-slate-900">Communications</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Order family message history</p>
+          <p className="text-xs text-slate-500 mt-0.5">By customer, family, or order</p>
         </div>
 
         <div className="flex-1 overflow-y-auto py-1">
-          {customersWithFamilies.length === 0 && (
-            <div className="px-4 py-10 text-center text-xs text-slate-400">
-              No order families yet.<br />Create families in the Orders view.
-            </div>
-          )}
-
-          {customersWithFamilies.map(customer => {
-            const customerFamilies = families.filter(f => f.customerId === customer.id);
-            const isExpanded = expandedCustomerIds.has(customer.id);
+          {allCustomers.map(customer => {
+            const custCtx: SelectedCtx = { scope: "customer", customerId: customer.id };
+            const custComms  = commsFor(communications, custCtx);
+            const custLast   = lastComm(communications, custCtx);
+            const custFamilies = families.filter(f => f.customerId === customer.id);
+            const custOrders   = orders.filter(o => o.customerId === customer.id);
+            const standalone   = custOrders.filter(o => !o.familyId);
+            const isCustExpanded = expandedCustIds.has(customer.id);
+            const isCustSelected = ctx?.scope === "customer" && ctx.customerId === customer.id;
 
             return (
               <div key={customer.id}>
                 {/* Customer row */}
-                <button
-                  onClick={() => toggleCustomer(customer.id)}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors"
-                >
-                  <svg className={`w-3 h-3 text-slate-400 transition-transform flex-shrink-0 ${isExpanded ? "rotate-90" : ""}`}
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                  </svg>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-slate-800 truncate">{customer.name}</div>
-                    <div className="text-xs text-slate-400">
-                      {customerFamilies.length} famil{customerFamilies.length !== 1 ? "ies" : "y"}
-                    </div>
-                  </div>
-                </button>
+                <div className="flex items-stretch">
+                  <button
+                    onClick={() => toggleCust(customer.id)}
+                    className="flex items-center justify-center px-2 py-2.5 hover:bg-slate-50 transition-colors flex-shrink-0"
+                  >
+                    <svg className={`w-3 h-3 text-slate-400 transition-transform ${isCustExpanded ? "rotate-90" : ""}`}
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  <TreeNode
+                    label={customer.name} sublabel={customer.accountNumber}
+                    indent={0} selected={isCustSelected}
+                    commCount={custComms.length} lastSentAt={custLast?.sentAt}
+                    unreadDot={custLast?.direction === "inbound"}
+                    onClick={() => setCtx(custCtx)}
+                  />
+                </div>
 
-                {/* Families under this customer */}
-                {isExpanded && (
-                  <div className="ml-3 border-l border-slate-100 mb-1">
-                    {customerFamilies.map(family => {
-                      const fc = FAMILY_COLORS.find(c => c.value === family.color);
-                      const commsForFamily = communications.filter(c => c.familyId === family.id);
-                      const lastComm = [...commsForFamily].sort((a, b) => b.sentAt.localeCompare(a.sentAt))[0];
-                      const hasUnread = lastComm?.direction === "inbound";
-                      const isSelected = selectedFamilyId === family.id;
+                {/* Families + orders under this customer */}
+                {isCustExpanded && (
+                  <div className="border-l border-slate-100 ml-5">
+                    {custFamilies.map(family => {
+                      const fc        = FAMILY_COLORS.find(c => c.value === family.color);
+                      const famCtx: SelectedCtx = { scope: "family", customerId: customer.id, familyId: family.id };
+                      const famComms  = commsFor(communications, famCtx);
+                      const famLast   = lastComm(communications, famCtx);
+                      const famOrders = orders.filter(o => o.familyId === family.id);
+                      const isFamExpanded = expandedFamIds.has(family.id);
+                      const isFamSelected = ctx?.scope === "family" && ctx.familyId === family.id;
 
                       return (
-                        <button
-                          key={family.id}
-                          onClick={() => setSelectedFamilyId(family.id)}
-                          className={`w-full flex items-center gap-2.5 pl-3 pr-3 py-2.5 text-left transition-colors
-                            ${isSelected ? "bg-blue-50 border-r-2 border-blue-500" : "hover:bg-slate-50"}`}
-                        >
-                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${fc?.dot ?? "bg-slate-300"}`} />
-                          <div className="flex-1 min-w-0">
-                            <div className={`text-xs font-medium truncate ${isSelected ? "text-blue-700" : "text-slate-700"}`}>
-                              {family.name}
-                            </div>
-                            {lastComm ? (
-                              <div className="text-xs text-slate-400">
-                                {formatShortDate(lastComm.sentAt)} · {commsForFamily.length} msg{commsForFamily.length !== 1 ? "s" : ""}
-                              </div>
-                            ) : (
-                              <div className="text-xs text-slate-300">No messages yet</div>
-                            )}
+                        <div key={family.id}>
+                          <div className="flex items-stretch">
+                            <button
+                              onClick={() => toggleFam(family.id)}
+                              className="flex items-center justify-center px-2 py-2 hover:bg-slate-50 transition-colors flex-shrink-0"
+                            >
+                              <svg className={`w-3 h-3 text-slate-300 transition-transform ${isFamExpanded ? "rotate-90" : ""}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                            <TreeNode
+                              label={family.name} dot={fc?.dot}
+                              indent={1} selected={isFamSelected}
+                              commCount={famComms.length} lastSentAt={famLast?.sentAt}
+                              unreadDot={famLast?.direction === "inbound"}
+                              onClick={() => setCtx(famCtx)}
+                            />
                           </div>
-                          {hasUnread && (
-                            <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" title="Last message is inbound" />
-                          )}
-                        </button>
+
+                          {isFamExpanded && famOrders.map(order => {
+                            const ordCtx: SelectedCtx = { scope: "order", customerId: customer.id, familyId: family.id, orderId: order.id };
+                            const ordComms = commsFor(communications, ordCtx);
+                            const ordLast  = lastComm(communications, ordCtx);
+                            const isOrdSelected = ctx?.scope === "order" && ctx.orderId === order.id;
+                            return (
+                              <div key={order.id} className="border-l border-slate-100 ml-4">
+                                <TreeNode
+                                  label={order.orderNumber}
+                                  sublabel={order.product}
+                                  indent={2} selected={isOrdSelected}
+                                  commCount={ordComms.length} lastSentAt={ordLast?.sentAt}
+                                  unreadDot={ordLast?.direction === "inbound"}
+                                  onClick={() => setCtx(ordCtx)}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+
+                    {/* Standalone orders */}
+                    {standalone.map(order => {
+                      const ordCtx: SelectedCtx = { scope: "order", customerId: customer.id, familyId: null, orderId: order.id };
+                      const ordComms = commsFor(communications, ordCtx);
+                      const ordLast  = lastComm(communications, ordCtx);
+                      const isOrdSelected = ctx?.scope === "order" && ctx.orderId === order.id;
+                      return (
+                        <TreeNode
+                          key={order.id}
+                          label={order.orderNumber}
+                          sublabel={order.product}
+                          indent={1} selected={isOrdSelected}
+                          commCount={ordComms.length} lastSentAt={ordLast?.sentAt}
+                          unreadDot={ordLast?.direction === "inbound"}
+                          onClick={() => setCtx(ordCtx)}
+                        />
                       );
                     })}
                   </div>
@@ -327,123 +525,104 @@ export function CommsView() {
         </div>
       </div>
 
-      {/* ── Right panel ───────────────────────────────────────────────────── */}
-      {!selectedFamily ? (
+      {/* ── Right panel ─────────────────────────────────────────────────── */}
+      {!ctx ? (
         <div className="flex-1 flex items-center justify-center bg-slate-50">
           <div className="text-center">
             <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
                 d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            <p className="text-slate-400 text-sm">Select an order family to view communications</p>
+            <p className="text-slate-400 text-sm">Select a customer, family, or order</p>
+            <p className="text-slate-300 text-xs mt-1">to view and send communications</p>
           </div>
         </div>
       ) : (
         <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
 
-          {/* Thread header */}
+          {/* Header */}
           <div className="bg-white border-b border-slate-200 px-5 py-3 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <span className={`w-3 h-3 rounded-full flex-shrink-0 ${colorConfig?.dot ?? "bg-slate-300"}`} />
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900">{selectedFamily.name}</h3>
-                <p className="text-xs text-slate-500">
-                  {selectedCustomer?.name} · {familyOrders.length} order{familyOrders.length !== 1 ? "s" : ""}
-                  {familyOrders.length > 0 && (
-                    <> · ${familyOrders.reduce((s, o) => s + o.value, 0).toLocaleString()}/mo</>
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-400 mb-1">
+                  {headerParts.map((part, i) => (
+                    <span key={i} className="flex items-center gap-1.5">
+                      {i > 0 && <span>›</span>}
+                      <span className={i === headerParts.length - 1 ? "text-slate-700 font-medium" : ""}>{part}</span>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  {colorConfig && <span className={`w-2.5 h-2.5 rounded-full ${colorConfig.dot}`} />}
+                  <ScopeBadge scope={ctx.scope} />
+                  {ctxOrder && (
+                    <span className="text-sm text-slate-600 font-medium">{ctxOrder.product}</span>
                   )}
-                  {" · "}{familyComms.length} message{familyComms.length !== 1 ? "s" : ""}
-                </p>
+                  {ctxOrder && (
+                    <span className="text-xs text-slate-400">{ctxOrder.address}</span>
+                  )}
+                </div>
               </div>
 
-              {/* Order summary chips */}
-              <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                {familyOrders.slice(0, 3).map(o => (
-                  <span key={o.id} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">
-                    {o.orderNumber}
-                  </span>
-                ))}
-                {familyOrders.length > 3 && (
-                  <span className="text-xs text-slate-400">+{familyOrders.length - 3} more</span>
+              {/* Meta */}
+              <div className="text-right flex-shrink-0 text-xs text-slate-400">
+                <div>{threadComms.length} message{threadComms.length !== 1 ? "s" : ""}</div>
+                {ctxOrder && <div className="font-semibold text-slate-600 mt-0.5">${ctxOrder.value.toLocaleString()}/mo</div>}
+                {ctxFamily && !ctxOrder && (
+                  <div className="font-semibold text-slate-600 mt-0.5">
+                    ${ctxFamilyOrders.reduce((s, o) => s + o.value, 0).toLocaleString()}/mo · {ctxFamilyOrders.length} orders
+                  </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Email thread */}
+          {/* Thread */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {familyComms.length === 0 && (
+            {threadComms.length === 0 && (
               <div className="text-center py-16 text-slate-400 text-sm">
-                No messages yet for this order family.
-                <br />Use the compose area below to send the first update.
+                No messages yet at this level.
+                <br />Use the compose area below to send the first one.
               </div>
             )}
-            {familyComms.map(comm => (
-              <EmailCard key={comm.id} comm={comm} />
-            ))}
+            {threadComms.map(comm => <EmailCard key={comm.id} comm={comm} />)}
             <div ref={threadEndRef} />
           </div>
 
-          {/* Compose area */}
+          {/* Compose */}
           <div className="bg-white border-t border-slate-200 p-4 flex-shrink-0">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Subject"
-                  value={subject}
-                  onChange={e => setSubject(e.target.value)}
-                  className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <input
+                type="text" placeholder="Subject" value={subject}
+                onChange={e => setSubject(e.target.value)}
+                className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
               <textarea
-                placeholder="Write a message, or click Generate AI Update to draft a status email automatically…"
-                value={body}
-                onChange={e => setBody(e.target.value)}
+                placeholder="Write a message, or click Generate AI Update…"
+                value={body} onChange={e => setBody(e.target.value)}
                 rows={5}
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
               />
               <div className="flex items-center gap-2 justify-end">
                 <button
-                  onClick={handleGenerateAI}
-                  disabled={generating || sending}
+                  onClick={handleGenerateAI} disabled={generating || sending}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-md hover:bg-violet-100 transition-colors disabled:opacity-50"
                 >
                   {generating ? (
-                    <>
-                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Generating…
-                    </>
+                    <><svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Generating…</>
                   ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2L9.5 8.5 3 11l6.5 2.5L12 20l2.5-6.5L21 11l-6.5-2.5z"/>
-                      </svg>
-                      Generate AI Update
-                    </>
+                    <><svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L9.5 8.5 3 11l6.5 2.5L12 20l2.5-6.5L21 11l-6.5-2.5z"/></svg>Generate AI Update</>
                   )}
                 </button>
                 <button
-                  onClick={handleSend}
-                  disabled={sending || generating || !subject.trim() || !body.trim()}
+                  onClick={handleSend} disabled={sending || generating || !subject.trim() || !body.trim()}
                   className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-40"
                 >
                   {sending ? (
-                    <>
-                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Sending…
-                    </>
+                    <><svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Sending…</>
                   ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                      Send
-                    </>
+                    <><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>Send</>
                   )}
                 </button>
               </div>
