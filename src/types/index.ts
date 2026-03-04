@@ -44,3 +44,18 @@ export const FAMILY_COLORS = [
 ] as const;
 
 export type FamilyColor = typeof FAMILY_COLORS[number]["value"];
+
+export interface Communication {
+  id: string;
+  familyId: string;
+  customerId: string;
+  subject: string;
+  body: string;
+  sentAt: string; // ISO date string
+  fromName: string;
+  fromEmail: string;
+  toName: string;
+  toEmail: string;
+  direction: "outbound" | "inbound";
+  isAiGenerated: boolean;
+}

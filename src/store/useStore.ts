@@ -1,8 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import type { Customer, Order, OrderFamily } from "@/types";
-import { INITIAL_CUSTOMERS, INITIAL_ORDERS, INITIAL_FAMILIES } from "@/data/placeholder";
+import type { Customer, Order, OrderFamily, Communication } from "@/types";
+import { INITIAL_CUSTOMERS, INITIAL_ORDERS, INITIAL_FAMILIES, INITIAL_COMMUNICATIONS } from "@/data/placeholder";
 
 const COLORS = ["blue", "green", "purple", "orange", "red", "teal", "pink", "yellow"];
 
@@ -33,6 +33,10 @@ interface StoreState {
   renameFamily: (id: string, name: string) => void;
   assignOrdersToFamily: (orderIds: string[], familyId: string | null) => void;
 
+  // Communications
+  communications: Communication[];
+  sendCommunication: (comm: Omit<Communication, "id">) => void;
+
   // Computed helpers
   getVisibleCustomerIds: () => string[];
   // All customers in the linked group — used for family visibility regardless of viewLinkedOrders
@@ -45,6 +49,7 @@ export const useStore = create<StoreState>((set, get) => ({
   customers: INITIAL_CUSTOMERS,
   orders: INITIAL_ORDERS,
   families: INITIAL_FAMILIES,
+  communications: INITIAL_COMMUNICATIONS,
   selectedCustomerId: null,
   selectedOrderIds: new Set(),
   viewLinkedOrders: false,
@@ -125,6 +130,11 @@ export const useStore = create<StoreState>((set, get) => ({
       ),
       selectedOrderIds: new Set(),
     })),
+
+  sendCommunication: (comm) => {
+    const id = `comm-${Date.now()}`;
+    set((state) => ({ communications: [...state.communications, { ...comm, id }] }));
+  },
 
   getVisibleCustomerIds: () => {
     const { selectedCustomerId, customers, viewLinkedOrders } = get();
